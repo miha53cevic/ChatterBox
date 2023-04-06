@@ -1,0 +1,2 @@
+- schema.prisma sadrži izgled baze podataka odnosno njegovu strukturu.
+- migrations su kao history promjena na bazi koji omogucju da se ne gube podaci, commitaju se na git

@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model korisnik {
+  idkorisnik                                  Int                      @id
+  korisnickoime                               String                   @db.VarChar(20)
+  email                                       String                   @db.VarChar(50)
+  lozinka                                     String                   @db.VarChar(50)
+  verificiran_email                           Boolean
+  avatarurl                                   String?                  @db.VarChar(300)
+  izgledapp                                   Int
+  poruka                                      poruka[]
+  prijatelji_prijatelji_idkorisnik1Tokorisnik prijatelji[]             @relation("prijatelji_idkorisnik1Tokorisnik")
+  prijatelji_prijatelji_idkorisnik2Tokorisnik prijatelji[]             @relation("prijatelji_idkorisnik2Tokorisnik")
+  pripadarazgovoru                            pripadarazgovoru[]
+  zahtjevzaprijateljstvo                      zahtjevzaprijateljstvo[]
+
+  @@unique([email, korisnickoime])
+}
+
+model multimedijalnizapis {
+  idzapis   Int       @id
+  url       String    @db.VarChar(500)
+  idporuka  Int
+  timestamp DateTime? @db.Timestamp(6)
+  poruka    poruka    @relation(fields: [idporuka], references: [idporuka], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model poruka {
+  idporuka            Int                   @id
+  idposiljatelj       Int
+  idrazgovor          Int
+  tekst               String                @db.VarChar(500)
+  timestamp           DateTime              @db.Timestamp(6)
+  multimedijalnizapis multimedijalnizapis[]
+  korisnik            korisnik              @relation(fields: [idposiljatelj], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
+  razgovor            razgovor              @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: NoAction, onUpdate: NoAction)
+  reakcijanaporuku    reakcijanaporuku[]
+}
+
+model prijatelji {
+  idkorisnik1                               Int
+  idkorisnik2                               Int
+  korisnik_prijatelji_idkorisnik1Tokorisnik korisnik @relation("prijatelji_idkorisnik1Tokorisnik", fields: [idkorisnik1], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
+  korisnik_prijatelji_idkorisnik2Tokorisnik korisnik @relation("prijatelji_idkorisnik2Tokorisnik", fields: [idkorisnik2], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([idkorisnik1, idkorisnik2])
+}
+
+model pripadarazgovoru {
+  idkorisnik      Int
+  idrazgovor      Int
+  omiljenrazgovor Boolean
+  korisnik        korisnik @relation(fields: [idkorisnik], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
+  razgovor        razgovor @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([idkorisnik, idrazgovor])
+}
+
+model razgovor {
+  idrazgovor       Int                @id
+  avatarurl        String?            @db.VarChar(300)
+  grupa            Boolean
+  poruka           poruka[]
+  pripadarazgovoru pripadarazgovoru[]
+}
+
+model reakcijanaporuku {
+  idreakcijanaporuku Int    @id
+  emoticon           String
+  idporuka           Int
+  poruka             poruka @relation(fields: [idporuka], references: [idporuka], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model status {
+  nazivstatus            String                   @id @db.VarChar(50)
+  zahtjevzaprijateljstvo zahtjevzaprijateljstvo[]
+}
+
+model zahtjevzaprijateljstvo {
+  idposiljatelj      Int
+  idprimatelj        Int
+  poruka             String?   @db.VarChar(500)
+  nazivstatus        String    @db.VarChar(50)
+  poslantimestamp    DateTime  @db.Timestamp(6)
+  prihvacentimestamp DateTime? @db.Timestamp(6)
+  odbijentimestamp   DateTime? @db.Timestamp(6)
+  korisnik           korisnik  @relation(fields: [idposiljatelj], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
+  status             status    @relation(fields: [nazivstatus], references: [nazivstatus], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([idposiljatelj, idprimatelj])
+}
