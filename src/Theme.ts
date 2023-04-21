@@ -9,8 +9,25 @@ export const roboto = Roboto({
     fallback: ['Helvetica', 'Arial', 'sans-serif'],
 });
 
-// Create a theme instance.
-const Theme = createTheme({
+const PurpleDarkTheme = createTheme({
+    palette: {
+        mode: 'dark',
+        primary: {
+            main: '#785ba3',
+        },
+        secondary: {
+            main: '#dbd8e3',
+        },
+        error: {
+            main: red.A400,
+        },
+    },
+    typography: {
+        fontFamily: roboto.style.fontFamily,
+    },
+});
+
+const DefaultTheme = createTheme({
     palette: {
         primary: {
             main: '#556cd6',
@@ -27,4 +44,4 @@ const Theme = createTheme({
     },
 });
 
-export default Theme;
+export default PurpleDarkTheme;

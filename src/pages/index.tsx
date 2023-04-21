@@ -1,35 +1,43 @@
-import * as React from 'react';
-import { Paper, Stack, Container, Typography, Grid } from '@mui/material';
-import AccessibleForwardIcon from '@mui/icons-material/AccessibleForward';
+import { Button, Grid, Stack, Typography } from '@mui/material';
 
-import { RegisterForm, LoginForm } from '../features/Forms';
+import TopAppBar from '../layouts/TopAppBar';
+import PageContent from '../layouts/PageContent';
+import { UnstyledNextLink } from '../components/NextLink';
 
-export default function Home() {
+const Index = () => {
     return (
-        <Container sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '100vh',
-            gap: '2rem'
-        }}>
-            <Paper sx={{ padding: '2rem' }}>
-                <Stack direction='column' alignItems='center' spacing='1rem'>
-                    <Typography variant="h4">
-                        MUI v5 + Next.js + Prisma + Iron-Session with TypeScript example
-                    </Typography>
-                    <AccessibleForwardIcon fontSize='large' />
-                </Stack>
-            </Paper>
-            <Grid container spacing='2rem'>
-                <Grid item xs={12} md={6}>
-                    <RegisterForm />
+        <main>
+            <TopAppBar />
+            <PageContent my='2rem'>
+                <Grid container spacing='1rem'>
+                    <Grid item xs={12} md={6}>
+                        <Typography variant='h1'>Chat from anywhere</Typography>
+                        <br/>
+                        <Stack direction='row' spacing='1rem'>
+                            <Button variant='contained'>
+                                <UnstyledNextLink href='/register'>
+                                    Start messaging!
+                                </UnstyledNextLink>
+                            </Button>
+                            <Button variant='outlined'>
+                                <UnstyledNextLink href='/login'>
+                                    Already haven an account?
+                                </UnstyledNextLink>
+                            </Button>
+                        </Stack>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <img src='https://picsum.photos/600/400' 
+                            loading='lazy'
+                            width='100%' 
+                            height='100%' 
+                            style={{ objectFit: 'contain' }} 
+                        />
+                    </Grid>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                    <LoginForm />
-                </Grid>
-            </Grid>
-        </Container>
+            </PageContent>
+        </main>
     );
-}
+};
+
+export default Index;
