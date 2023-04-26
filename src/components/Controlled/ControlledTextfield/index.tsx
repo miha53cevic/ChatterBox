@@ -5,13 +5,13 @@ import { Control, Controller } from 'react-hook-form';
  * MUI Textfield to be used with react-hook-form
  * @param control react-hook-form control
  * @param name name that will be used when submiting form to react-hook-form
- * @param defaultVal the default value of the input, can be used to preload
+ * @param defaultVal OPTIONAL the default value of the input, can be used to preload
  * @param StandardTextFeildProps MUI TextareaAutosize props are extended in Props and available to use 
  */
 export interface StandardProps extends StandardTextFieldProps {
     control: Control<any, any>,
     name: string,
-    defaultVal: string,
+    defaultVal?: string,
 };
 
 export const ControlledStandardTextfield: React.FC<StandardProps> = ({ control, name, defaultVal, ...props }) => {
@@ -20,7 +20,7 @@ export const ControlledStandardTextfield: React.FC<StandardProps> = ({ control, 
         <Controller
             control={control}
             name={name}
-            defaultValue={defaultVal}
+            defaultValue={defaultVal || ''}
             render={({ field: { ref, ...field } }) => (
                 <TextField
                     variant='standard'
@@ -36,7 +36,7 @@ export const ControlledStandardTextfield: React.FC<StandardProps> = ({ control, 
 export interface OutlineProps extends OutlinedTextFieldProps {
     control: Control<any, any>,
     name: string,
-    defaultVal: string,
+    defaultVal?: string,
 };
 
 export const ControlledOutlineTextfield: React.FC<OutlineProps> = ({ control, name, defaultVal, ...props }) => {
@@ -45,7 +45,7 @@ export const ControlledOutlineTextfield: React.FC<OutlineProps> = ({ control, na
         <Controller
             control={control}
             name={name}
-            defaultValue={defaultVal}
+            defaultValue={defaultVal || ''}
             render={({ field: { ref, ...field } }) => (
                 <TextField
                     {...props}

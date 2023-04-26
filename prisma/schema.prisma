@@ -8,13 +8,13 @@ datasource db {
 }
 
 model korisnik {
-  idkorisnik                                  Int                      @id
+  idkorisnik                                  Int                      @id @default(autoincrement())
   korisnickoime                               String                   @db.VarChar(20)
   email                                       String                   @db.VarChar(50)
   lozinka                                     String                   @db.VarChar(50)
-  verificiran_email                           Boolean
+  verificiran_email                           Boolean                  @default(false)
   avatarurl                                   String?                  @db.VarChar(300)
-  izgledapp                                   Int
+  izgledapp                                   Int                      @default(0)
   poruka                                      poruka[]
   prijatelji_prijatelji_idkorisnik1Tokorisnik prijatelji[]             @relation("prijatelji_idkorisnik1Tokorisnik")
   prijatelji_prijatelji_idkorisnik2Tokorisnik prijatelji[]             @relation("prijatelji_idkorisnik2Tokorisnik")
@@ -25,7 +25,7 @@ model korisnik {
 }
 
 model multimedijalnizapis {
-  idzapis   Int       @id
+  idzapis   Int       @id   @default(autoincrement())
   url       String    @db.VarChar(500)
   idporuka  Int
   timestamp DateTime? @db.Timestamp(6)
@@ -33,7 +33,7 @@ model multimedijalnizapis {
 }
 
 model poruka {
-  idporuka            Int                   @id
+  idporuka            Int                   @id @default(autoincrement())
   idposiljatelj       Int
   idrazgovor          Int
   tekst               String                @db.VarChar(500)
@@ -64,7 +64,7 @@ model pripadarazgovoru {
 }
 
 model razgovor {
-  idrazgovor       Int                @id
+  idrazgovor       Int                @id   @default(autoincrement())
   avatarurl        String?            @db.VarChar(300)
   grupa            Boolean
   poruka           poruka[]
@@ -72,7 +72,7 @@ model razgovor {
 }
 
 model reakcijanaporuku {
-  idreakcijanaporuku Int    @id
+  idreakcijanaporuku Int    @id @default(autoincrement())
   emoticon           String
   idporuka           Int
   poruka             poruka @relation(fields: [idporuka], references: [idporuka], onDelete: NoAction, onUpdate: NoAction)

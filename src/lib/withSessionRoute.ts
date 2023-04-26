@@ -11,7 +11,7 @@ declare module "iron-session" {
 }
 
 const ironOptions: IronSessionOptions = {
-    cookieName: "myapp_cookiename",
+    cookieName: "chatterbox_cookie",
     password: "complex_password_at_least_32_characters_long",
     // secure: true should be used in production (HTTPS) but can't be used in development (HTTP)
     cookieOptions: {

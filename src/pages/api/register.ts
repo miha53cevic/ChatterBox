@@ -1,4 +1,4 @@
-import { Body, createHandler, Post, HttpCode, ValidationPipe } from 'next-api-decorators';
+import { Body, createHandler, Post, HttpCode, ValidationPipe, ConflictException } from 'next-api-decorators';
 import { IsNotEmpty, IsEmail } from 'class-validator';
 
 import withSessionRoute from "../../lib/withSessionRoute";
@@ -6,12 +6,10 @@ import { prisma } from "../../server/db";
 
 class RegisterDTO {
     @IsNotEmpty()
-    name!: string;
+    username!: string;
 
     @IsEmail()
     email!: string;
-
-    bio?: string;
 
     @IsNotEmpty()
     password!: string;
@@ -21,15 +19,21 @@ class RegisterController {
     @Post()
     @HttpCode(201)
     public async addUser(@Body(ValidationPipe) dto: RegisterDTO) {
-        const newUser = await prisma.user.create({
-            data: {
-                name: dto.name,
-                email: dto.email,
-                password: dto.password,
-                profile: {
-                    create: { bio: dto.bio },
-                },
+        const usernameOrEmailExists = await prisma.korisnik.count({
+            where: {
+                OR: [
+                    { email: dto.email },
+                    { korisnickoime: dto.username },
+                ]
+            }
+        });
+        if (usernameOrEmailExists > 0) throw new ConflictException("Username or email already exists!");
 
+        const newUser = await prisma.korisnik.create({
+            data: {
+                korisnickoime: dto.username,
+                email: dto.email,
+                lozinka: dto.password,
             },
         });
         return newUser;

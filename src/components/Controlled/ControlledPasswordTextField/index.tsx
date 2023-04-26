@@ -7,12 +7,14 @@ export interface ControlledPasswordTextFieldProps {
     label: string,
     control: Control<any, any>,
     name: string,
-    defaultVal: string,
+    defaultVal?: string,
+    pattern?: string,
+    variant?: "outlined" | "standard" | "filled",
     fullWidth?: boolean,
     required?: boolean,
 };
 
-export const ControlledPasswordTextField: React.FC<ControlledPasswordTextFieldProps> = ({ label, control, name, defaultVal, fullWidth, required }) => {
+export const ControlledPasswordTextField: React.FC<ControlledPasswordTextFieldProps> = ({ label, control, name, defaultVal, pattern, variant, fullWidth, required }) => {
 
     const [showPassword, setShowPassword] = useState(false);
 
@@ -24,11 +26,11 @@ export const ControlledPasswordTextField: React.FC<ControlledPasswordTextFieldPr
         <Controller
             control={control}
             name={name}
-            defaultValue={defaultVal}
+            defaultValue={defaultVal || ''}
             render={({ field }) => (
-                <FormControl variant='outlined' fullWidth={fullWidth}>
-                    <InputLabel>{`${label} *`}</InputLabel>
-                    <OutlinedInput label={label} type={showPassword ? 'text' : 'password'}
+                <FormControl variant={variant || 'outlined'} fullWidth={fullWidth}>
+                    <InputLabel>{required ? `${label} *` : label}</InputLabel>
+                    <OutlinedInput label={required ? `${label} *` : label} type={showPassword ? 'text' : 'password'}
                         endAdornment={
                             <InputAdornment position="end">
                                 <IconButton
@@ -41,6 +43,7 @@ export const ControlledPasswordTextField: React.FC<ControlledPasswordTextFieldPr
                         }
                         {...field}
                         required={required}
+                        inputProps={{ pattern: pattern }}
                     />
                 </FormControl>
             )}

@@ -6,8 +6,8 @@ import withSessionRoute from "../../lib/withSessionRoute";
 import { prisma } from "../../server/db";
 
 class LoginDTO {
-    @IsEmail()
-    email!: string;
+    @IsNotEmpty()
+    usernameOrEmail!: string;
 
     @IsNotEmpty()
     password!: string;
@@ -18,7 +18,10 @@ class LoginController {
     public async login(@Req() req: NextApiRequest, @Body(ValidationPipe) dto: LoginDTO) {
         const korisnik = await prisma.korisnik.findFirst({
             where: {
-                email: dto.email,
+                OR: [
+                    { korisnickoime: dto.usernameOrEmail },
+                    { email: dto.usernameOrEmail },
+                ],
                 lozinka: dto.password,
             },
         });
