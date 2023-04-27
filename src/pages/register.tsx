@@ -9,6 +9,16 @@ import { ControlledPasswordTextField } from "../components/Controlled/Controlled
 import LoadingButton from "../components/LoadingButton";
 import useErrorAlert from "../hooks/useErrorAlert";
 import { Poster } from "../lib/Fetcher";
+import withSession from "../lib/withSession";
+
+// Send to /app if logged in
+export const getServerSideProps = withSession(async ({ req }) => {
+    const user = req.session.korisnik;
+    if (user) return { redirect: { destination: '/app', permanent: false } }
+    return {
+        props: {}
+    };
+});
 
 export interface RegisterForm {
     username: string,

@@ -31,7 +31,7 @@ const Index = () => {
                         </Stack>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                        <img src='https://picsum.photos/600/400' 
+                        <img src='/frontpage_screenshot.png' 
                             loading='lazy'
                             width='100%' 
                             height='100%' 

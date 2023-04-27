@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Stack } from "@mui/material";
 import { useForm } from "react-hook-form";
 import useSWRMutation from 'swr/mutation';
+import Router from 'next/router';
 
 import LoginRegisterTemplate from '../features/LoginRegisterTemplate';
 import { ControlledOutlineTextfield } from "../components/Controlled/ControlledTextfield";
@@ -9,6 +10,16 @@ import { ControlledPasswordTextField } from "../components/Controlled/Controlled
 import LoadingButton from "../components/LoadingButton";
 import useErrorAlert from "../hooks/useErrorAlert";
 import { Poster } from "../lib/Fetcher";
+import withSession from "../lib/withSession";
+
+// Send to /app if logged in
+export const getServerSideProps = withSession(async ({ req }) => {
+    const user = req.session.korisnik;
+    if (user) return { redirect: { destination: '/app', permanent: false } }
+    return {
+        props: {}
+    };
+});
 
 export interface LoginForm
 {
@@ -27,7 +38,8 @@ const Login = () => {
         // Call /api/login
         try {
             await trigger(data);
-            // TODO - refresh state and goto /app
+            // Send to /app
+            Router.push('/app');
         } catch(error: any) {
             console.error(error.response);
             if (error.response.status == 401) showError("Username/Email or password incorrect");

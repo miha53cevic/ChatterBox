@@ -1,6 +1,6 @@
 import { NextApiHandler } from "next";
 import { withIronSessionApiRoute } from "iron-session/next";
-import { IronSessionOptions } from "iron-session";
+import ironOptions from "./ironOptions";
 
 import type { korisnik } from '@prisma/client';
 
@@ -10,14 +10,6 @@ declare module "iron-session" {
     }
 }
 
-const ironOptions: IronSessionOptions = {
-    cookieName: "chatterbox_cookie",
-    password: "complex_password_at_least_32_characters_long",
-    // secure: true should be used in production (HTTPS) but can't be used in development (HTTP)
-    cookieOptions: {
-        secure: process.env.NODE_ENV === "production",
-    },
-};
 export function withSessionRoute(handler: NextApiHandler) {
     return withIronSessionApiRoute(handler, ironOptions);
 }
