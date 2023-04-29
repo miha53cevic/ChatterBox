@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Stack, Typography } from "@mui/material";
 import { useForm } from "react-hook-form";
 import useSWRMutation from 'swr/mutation';
+import Router from "next/router";
 
 import LoginRegisterTemplate from '../features/LoginRegisterTemplate';
 import { ControlledOutlineTextfield } from "../components/Controlled/ControlledTextfield";
@@ -55,6 +56,7 @@ const Register = () => {
         };
         try {
             await trigger(sendData);
+            Router.push('/login');
         } catch(error: any) {
             console.error(error.response);
             if (error.response.status == 409) showError("Username or email already taken!");

@@ -16,7 +16,7 @@ export const getServerSideProps = withSession(async ({ req }) => {
 const App: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ user }) => {
     return (
         <main>
-            <ChatAppLayout>
+            <ChatAppLayout user={user}>
                 <Stack direction='column' justifyContent='center' alignItems='center' height='100%' spacing='1rem'>
                     <Avatar sx={{ width: '128px', height: '128px' }} src={user.avatarurl} />
                     <Typography variant='h3'>Hello, {user.korisnickoime}</Typography>

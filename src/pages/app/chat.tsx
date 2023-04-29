@@ -19,7 +19,7 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
     return (
         <main>
-            <ChatAppLayout>
+            <ChatAppLayout user={user}>
                 <Stack direction='row' height='100%'>
                     <Box sx={{ overflowY: 'scroll' }}>
                         <Paper sx={{ padding: '2rem', minHeight: '100%' }}>
