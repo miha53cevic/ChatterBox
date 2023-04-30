@@ -21,7 +21,7 @@ const Friends: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> 
     return (
         <main>
             <ChatAppLayout user={user}>
-                <Container sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
+                <Container sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2rem', padding: '2rem' }}>
                     <Paper sx={{ padding: '2rem', width: '100%' }}>
                         <AddFriend />
                     </Paper>
