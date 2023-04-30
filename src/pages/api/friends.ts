@@ -28,7 +28,7 @@ class FriendsController {
         for (const friend of friends) {
             if (friend.idkorisnik1 !== req.session.korisnik.idkorisnik)
                 friendsData.push(friend.korisnik_prijatelji_idkorisnik1Tokorisnik);
-            else (friend.idkorisnik2 !== req.session.korisnik.idkorisnik)
+            else if (friend.idkorisnik2 !== req.session.korisnik.idkorisnik)
                 friendsData.push(friend.korisnik_prijatelji_idkorisnik2Tokorisnik);
         };
 

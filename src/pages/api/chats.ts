@@ -1,4 +1,4 @@
-import { createHandler, Get, UnauthorizedException, Req, Param } from 'next-api-decorators';
+import { createHandler, Get, UnauthorizedException, Req } from 'next-api-decorators';
 import type { NextApiRequest } from "next";
 
 import withSessionRoute from "../../lib/withSessionRoute";
@@ -33,6 +33,11 @@ class ChatsController {
                 }
             },
         });
+
+        // Makni trenutni user iz popisa usera
+        for (let i = 0; i < chats.length; i++) {
+            chats[i].pripadarazgovoru = chats[i].pripadarazgovoru.filter(user => user.korisnik.idkorisnik !== req.session.korisnik?.idkorisnik)
+        }
 
         return chats;
     }

@@ -6,12 +6,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import { Fetcher } from "../../lib/Fetcher";
 import Loading from "../../layouts/Loading";
+import FriendListItem from '../FriendListItem';
 
-export interface Props {
-    user: korisnik,
-};
-
-const FriendsList: React.FC<Props> = ({ user }) => {
+const FriendsList: React.FC = () => {
 
     const { data, error, isLoading } = useSWR('/api/friends', Fetcher<korisnik[]>);
 
@@ -25,19 +22,13 @@ const FriendsList: React.FC<Props> = ({ user }) => {
             <Box sx={{ overflowY: 'scroll' }}>
                 {data.map((friend, index) => (
                     <React.Fragment key={index}>
-                        <Stack direction='row' sx={{ my: '1rem', mr: 2 }} spacing='1rem'>
-                            <img src={friend.avatarurl || 'https://picsum.photos/200'} width='100px' height='100px' loading="lazy" alt="user_avatar"
-                                style={{ borderRadius: '50%', border: 'solid black' }}
-                            />
-                            <Box flex='1' alignSelf='center'>
-                                <Typography variant='h4'>{friend.korisnickoime}</Typography>
-                            </Box>
+                        <FriendListItem user={friend}>
                             <Stack direction='row' alignItems='center'>
                                 <IconButton>
                                     <DeleteIcon fontSize="large" sx={{ color: 'red' }} />
                                 </IconButton>
                             </Stack>
-                        </Stack>
+                        </FriendListItem>
                         <hr />
                     </React.Fragment>
                 ))}

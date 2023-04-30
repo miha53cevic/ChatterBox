@@ -1,9 +1,11 @@
-import { Box, CircularProgress, ListItemButton, Stack, TextField, Typography } from "@mui/material";
+import { Box, CircularProgress, IconButton, ListItemButton, TextField } from "@mui/material";
 import { korisnik } from "@prisma/client";
 import { useState } from "react";
 import useSWR from 'swr';
+import ChatIcon from '@mui/icons-material/Chat';
 
 import { Fetcher } from "../../lib/Fetcher";
+import FriendListItem from "../FriendListItem";
 
 export interface ChatData {
     idrazgovor: number,
@@ -38,12 +40,7 @@ const ChatList: React.FC<Props> = ({ user }) => {
                 :
                 data.filter(item => item.pripadarazgovoru.find(i => i.korisnik.idkorisnik !== user.idkorisnik)?.korisnik.korisnickoime.toLowerCase().includes(search)).map((item, index) => (
                     <ListItemButton key={index}>
-                        <Stack direction='row'>
-                            <img width='100px' height='100px' src={item.avatarurl} alt='user avatar' />
-                            <Box>
-                                <Typography>{item.pripadarazgovoru.find(i => i.korisnik.idkorisnik !== user.idkorisnik)?.korisnik.korisnickoime}</Typography>
-                            </Box>
-                        </Stack>
+                        <FriendListItem user={user} />
                     </ListItemButton>
                 ))
             }
