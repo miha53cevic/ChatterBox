@@ -4,6 +4,8 @@ import type { NextApiRequest } from "next";
 import withSessionRoute from "../../lib/withSessionRoute";
 import { prisma } from '../../server/db';
 
+import type { ApiChats } from '../../types/apiTypes';
+
 class ChatsController {
     @Get()
     public async getUsersChats(@Req() req: NextApiRequest) {
@@ -39,7 +41,7 @@ class ChatsController {
             chats[i].pripadarazgovoru = chats[i].pripadarazgovoru.filter(user => user.korisnik.idkorisnik !== req.session.korisnik?.idkorisnik)
         }
 
-        return chats;
+        return chats as ApiChats;
     }
 }
 

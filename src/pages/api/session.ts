@@ -4,6 +4,8 @@ import { prisma } from '../../server/db';
 
 import withSessionRoute from "../../lib/withSessionRoute";
 
+import type { ApiSession } from '../../types/apiTypes';
+
 class SessionController {
     @Get()
     public async session(@Req() req: NextApiRequest) {
@@ -24,7 +26,7 @@ class SessionController {
 
         req.session.korisnik = korisnik;
         await req.session.save();
-        return req.session.korisnik;
+        return req.session.korisnik as ApiSession;
     }
 }
 

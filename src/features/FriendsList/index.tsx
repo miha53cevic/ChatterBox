@@ -1,16 +1,28 @@
 import React from 'react';
 import { Typography, Box, Stack, IconButton } from "@mui/material";
-import { korisnik } from "@prisma/client";
 import useSWR from 'swr';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-import { Fetcher } from "../../lib/Fetcher";
+import { Fetcher, Deleter } from "../../lib/Fetcher";
 import Loading from "../../layouts/Loading";
 import FriendListItem from '../FriendListItem';
+import useErrorAlert from '../../hooks/useErrorAlert';
+
+import type { ApiFriends } from '../../types/apiTypes';
 
 const FriendsList: React.FC = () => {
+    const showError = useErrorAlert();
 
-    const { data, error, isLoading } = useSWR('/api/friends', Fetcher<korisnik[]>);
+    const handleFriendDelete = async (idFriend: number) => {
+        try {
+            const res = await Deleter(`/api/friends/${idFriend}`);
+            await mutate();
+        } catch(err) {
+            showError(JSON.stringify(err));
+        }
+    };
+
+    const { data, error, isLoading, mutate } = useSWR('/api/friends', Fetcher<ApiFriends>);
 
     if (isLoading) return <Loading />;
     if (error) return <pre>{JSON.stringify(error)}</pre>;
@@ -19,12 +31,12 @@ const FriendsList: React.FC = () => {
         <>
             <Typography variant='h3'>Friends</Typography>
             <br/><br/>
-            <Box sx={{ overflowY: 'scroll' }}>
+            <Box>
                 {data.map((friend, index) => (
                     <React.Fragment key={index}>
                         <FriendListItem user={friend}>
                             <Stack direction='row' alignItems='center'>
-                                <IconButton>
+                                <IconButton onClick={() => handleFriendDelete(friend.idkorisnik)}>
                                     <DeleteIcon fontSize="large" sx={{ color: 'red' }} />
                                 </IconButton>
                             </Stack>

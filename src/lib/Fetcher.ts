@@ -7,3 +7,7 @@ export async function Poster<T = any, V = any>(url: string, { arg }: { arg: T })
 export async function Fetcher<T = any>(url: string) {
     return (await axios.get(url)).data as T;
 };
+
+export async function Deleter<T = any>(url: string) {
+    return (await axios.delete(url)).data as T;
+};

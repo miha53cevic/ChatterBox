@@ -1,23 +1,12 @@
-import { Box, CircularProgress, IconButton, ListItemButton, TextField } from "@mui/material";
+import { Box, CircularProgress, ListItemButton, TextField } from "@mui/material";
 import { korisnik } from "@prisma/client";
 import { useState } from "react";
 import useSWR from 'swr';
-import ChatIcon from '@mui/icons-material/Chat';
 
 import { Fetcher } from "../../lib/Fetcher";
 import FriendListItem from "../FriendListItem";
 
-export interface ChatData {
-    idrazgovor: number,
-    avatarurl?: string,
-    grupa: boolean,
-    pripadarazgovoru: {
-        korisnik: {
-            idkorisnik: number,
-            korisnickoime: string,
-        }
-    }[]
-};
+import type { ApiChats } from "../../types/apiTypes";
 
 export interface Props {
     user: korisnik
@@ -25,7 +14,7 @@ export interface Props {
 
 const ChatList: React.FC<Props> = ({ user }) => {
     
-    const { data, error, isLoading } = useSWR(`/api/chats`, Fetcher<ChatData[]>);
+    const { data, error, isLoading } = useSWR(`/api/chats`, Fetcher<ApiChats>);
 
     const [search, setSearch] = useState("");
 

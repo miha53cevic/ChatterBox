@@ -28,6 +28,9 @@ class LoginController {
 
         if (!korisnik) throw new UnauthorizedException();
 
+        // Remove lozinka
+        korisnik.lozinka = "";
+
         req.session.korisnik = korisnik;
         await req.session.save();
         return { message: 'OK' };
