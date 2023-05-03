@@ -10,6 +10,7 @@ import DialogCustomForm from "../../components/Dialogs/CustomForm";
 import { ControlledPasswordTextField } from "../../components/Controlled/ControlledPasswordTextField";
 import { S3Upload } from "../../lib/S3Bucket";
 import useErrorAlert from "../../hooks/useErrorAlert";
+import { Poster } from "../../lib/Fetcher";
 
 export const getServerSideProps = withSession(async ({ req }) => {
     const user = req.session.korisnik;
@@ -29,9 +30,15 @@ const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>>
     const [openChangePass, setOpenChangePass] = useState(false);
 
     const { control, handleSubmit, reset } = useForm<{ password: string }>();
-    const onSubmit = (data: { password: string }) => {
-        console.log("New password is: " + data.password);
+    const onSubmit = async (data: { password: string }) => {
         reset();
+
+        try {
+            await Poster('/api/change_password', { arg: { newPassword: data.password } });
+            console.log("New password is: " + data.password);
+        } catch(err) {
+            showError("Error when changing password!");
+        }
     };
 
     const handleChangeImage: ChangeEventHandler<HTMLInputElement> = async (e) => {
@@ -55,14 +62,14 @@ const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>>
             <ChooseThemeColors open={openChooseThemeColor} handleClose={() => setOpenChooseThemeColor(false)} />
             <DialogCustomForm
                 title="Change password"
-                text="Enter a new password"
+                text="Password must be at least 8 characters long"
                 open={openChangePass}
                 handleClose={() => setOpenChangePass(false)}
                 submitText="Change password"
                 submitForForm="changePasswordForm"
             >
                 <form id='changePasswordForm' onSubmit={(handleSubmit(onSubmit))}>
-                    <ControlledPasswordTextField control={control} name='password' label="Password" pattern="^.{8,}" />
+                    <ControlledPasswordTextField control={control} name='password' label="Password" pattern="^.{8,}" fullWidth />
                 </form>
             </DialogCustomForm>
             <ChatAppLayout user={user}>

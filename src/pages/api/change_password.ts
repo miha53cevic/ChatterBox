@@ -1,24 +1,26 @@
 import { Body, createHandler, Post, HttpCode, ValidationPipe, UnauthorizedException, Req } from 'next-api-decorators';
 import { IsNotEmpty } from 'class-validator';
 import type { NextApiRequest } from 'next';
+import * as bcrypt from 'bcrypt';
 
 import withSessionRoute from "../../lib/withSessionRoute";
 import { prisma } from "../../server/db";
 
-class ThemeDTO {
+class ChangePasswordDTO {
     @IsNotEmpty()
-    themeIndex!: number;
+    newPassword!: string;
 }
 
-class ThemeController {
+class ChangePasswordController {
     @Post()
     @HttpCode(200)
-    public async changeTheme(@Req() req: NextApiRequest, @Body(ValidationPipe) dto: ThemeDTO) {
+    public async changeTheme(@Req() req: NextApiRequest, @Body(ValidationPipe) dto: ChangePasswordDTO) {
         if (!req.session.korisnik) throw new UnauthorizedException('User not logged in!');
 
+        const encryptedPass = bcrypt.hashSync(dto.newPassword, 10);
         const updatedKorisnik = await prisma.korisnik.update({
             data: {
-                izgledapp: dto.themeIndex,
+                lozinka: encryptedPass,
             },
             where: {
                 idkorisnik: req.session.korisnik.idkorisnik,
@@ -32,4 +34,4 @@ class ThemeController {
     }
 }
 
-export default withSessionRoute(createHandler(ThemeController));
+export default withSessionRoute(createHandler(ChangePasswordController));

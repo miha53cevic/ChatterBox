@@ -31,7 +31,6 @@ class RegisterController {
         if (usernameOrEmailExists > 0) throw new ConflictException("Username or email already exists!");
 
         const encryptedPass = bcrypt.hashSync(dto.password, 10);
-
         const newUser = await prisma.korisnik.create({
             data: {
                 korisnickoime: dto.username,
