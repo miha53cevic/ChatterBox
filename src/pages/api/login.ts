@@ -1,6 +1,7 @@
 import { Body, createHandler, Post, UnauthorizedException, ValidationPipe, Req } from 'next-api-decorators';
-import { IsNotEmpty, IsEmail } from 'class-validator';
+import { IsNotEmpty } from 'class-validator';
 import type { NextApiRequest } from "next";
+import * as bcrypt from 'bcrypt';
 
 import withSessionRoute from "../../lib/withSessionRoute";
 import { prisma } from "../../server/db";
@@ -22,11 +23,10 @@ class LoginController {
                     { korisnickoime: dto.usernameOrEmail },
                     { email: dto.usernameOrEmail },
                 ],
-                lozinka: dto.password,
             },
         });
 
-        if (!korisnik) throw new UnauthorizedException();
+        if (!korisnik || !bcrypt.compareSync(dto.password, korisnik.lozinka)) throw new UnauthorizedException();
 
         // Remove lozinka
         korisnik.lozinka = "";

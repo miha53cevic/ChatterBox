@@ -10,6 +10,8 @@ import type { ApiFriendRequests } from '../../../types/apiTypes';
 class AddFriendRequestDTO {
     @IsNotEmpty()
     idPrimatelj!: number;
+
+    poruka?: string;
 };
 
 class FriendRequestsController {
@@ -42,7 +44,7 @@ class FriendRequestsController {
                 idposiljatelj: req.session.korisnik.idkorisnik,
                 idprimatelj: dto.idPrimatelj,
                 nazivstatus: 'awaiting confirmation',
-                poruka: "",
+                poruka: dto.poruka,
             },
         });
 

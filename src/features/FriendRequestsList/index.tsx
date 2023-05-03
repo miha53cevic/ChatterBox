@@ -35,8 +35,6 @@ const FriendRequestsList: React.FC = () => {
         }
     };
 
-    // TODO - vidjeti opcionalnu poruku
-
     const { data, error, isLoading, mutate } = useSWR('/api/friend_requests', Fetcher<ApiFriendRequests>);
 
     if (isLoading) return <Loading />;
@@ -57,6 +55,9 @@ const FriendRequestsList: React.FC = () => {
                                 <CloseIcon fontSize="large" sx={{ color: 'red' }} />
                             </IconButton>
                         </FriendListItem>
+                        {request.poruka && request.poruka !== '' &&
+                            <Typography>{request.poruka}</Typography>
+                        }
                         <hr />
                     </React.Fragment>
                 ))}

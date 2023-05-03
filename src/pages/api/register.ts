@@ -1,5 +1,6 @@
 import { Body, createHandler, Post, HttpCode, ValidationPipe, ConflictException } from 'next-api-decorators';
 import { IsNotEmpty, IsEmail } from 'class-validator';
+import * as bcrypt from 'bcrypt';
 
 import withSessionRoute from "../../lib/withSessionRoute";
 import { prisma } from "../../server/db";
@@ -29,11 +30,13 @@ class RegisterController {
         });
         if (usernameOrEmailExists > 0) throw new ConflictException("Username or email already exists!");
 
+        const encryptedPass = bcrypt.hashSync(dto.password, 10);
+
         const newUser = await prisma.korisnik.create({
             data: {
                 korisnickoime: dto.username,
                 email: dto.email,
-                lozinka: dto.password,
+                lozinka: encryptedPass,
             },
         });
         return newUser;

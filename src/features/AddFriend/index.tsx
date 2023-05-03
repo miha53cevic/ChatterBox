@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Button, IconButton, Stack, Typography } from "@mui/material";
+import React, { useEffect, useRef, useState } from "react";
+import { Button, IconButton, Stack, TextareaAutosize, Typography } from "@mui/material";
 import { useForm } from "react-hook-form";
 import AddIcon from '@mui/icons-material/Add';
 import useSWRMutation from 'swr/mutation';
@@ -11,36 +11,55 @@ import FriendListItem from "../FriendListItem";
 
 import type { ApiUsersWithSimiliarName } from "../../types/apiTypes";
 import useErrorAlert from "../../hooks/useErrorAlert";
+import DialogCustomForm from "../../components/Dialogs/CustomForm";
 
 export interface SearchResultProps {
     data: ApiUsersWithSimiliarName,
     mutate: any,
+    search: string,
 };
 
-const SearchResult: React.FC<SearchResultProps> = ({ data, mutate }) => {
+const SearchResult: React.FC<SearchResultProps> = ({ data, mutate, search }) => {
 
     const showError = useErrorAlert();
 
-    const { trigger } = useSWRMutation('/api/friend_requests', Poster<{ idPrimatelj: number }>);
-    const handleSendFriendRequest = async (idPrimatelj: number) => {
+    const { trigger } = useSWRMutation('/api/friend_requests', Poster<{ idPrimatelj: number, poruka: string }>);
+    const [primatelj, setPrimatelj] = useState<number>();
+    const handleSendRequest = async () => {
+        if (!primatelj || !optionalMsgRef.current) return;
         try {
-            await trigger({ idPrimatelj: idPrimatelj });
+            await trigger({ idPrimatelj: primatelj, poruka: optionalMsgRef.current.value });
             // Trigger update data in AddFriend
             await mutate();
-        } catch(error) {
+        } catch (error) {
             showError(JSON.stringify(error));
         }
     };
 
-    // TODO - kratka poruka tjekom slanja
+    const [openRequestDialog, setOpenRequestDialog] = useState(false);
+    const handleAddButton = async (idPrimatelj: number) => {
+        setPrimatelj(idPrimatelj);
+        setOpenRequestDialog(true);
+    };
 
+    const optionalMsgRef = useRef<HTMLTextAreaElement>(null);
     return (
         <>
+            <DialogCustomForm
+                open={openRequestDialog}
+                handleClose={() => setOpenRequestDialog(false)}
+                title="Send friend request"
+                text=""
+                submitText="Send"
+                submitAction={handleSendRequest}
+            >
+                <TextareaAutosize ref={optionalMsgRef} placeholder="Optional message..." style={{ width: '300px', height: '10rem', backgroundColor: 'gray', borderColor: 'gray', color: 'white' }} />
+            </DialogCustomForm>
             {data.map(({ user, nazivstatus }, index) => (
                 <React.Fragment key={index}>
                     <FriendListItem user={user}>
                         {!nazivstatus ?
-                            <IconButton onClick={() => handleSendFriendRequest(user.idkorisnik)}>
+                            <IconButton onClick={() => handleAddButton(user.idkorisnik)}>
                                 <AddIcon fontSize="large" />
                             </IconButton>
                             :
@@ -52,6 +71,7 @@ const SearchResult: React.FC<SearchResultProps> = ({ data, mutate }) => {
                     <hr />
                 </React.Fragment>
             ))}
+            {!data.length && search != '' && <Typography>No user found</Typography>}
         </>
     );
 };
@@ -95,7 +115,7 @@ const AddFriend: React.FC = () => {
                     </Stack>
                 </form>
                 <br />
-                <SearchResult data={data || []} mutate={trigger} />
+                <SearchResult data={data || []} mutate={trigger} search={search} />
             </DialogFullscreen>
             <Stack direction='row' justifyContent='flex-end'>
                 <Button variant='contained' onClick={() => setOpenDialog(true)}>Add friend</Button>

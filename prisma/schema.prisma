@@ -11,7 +11,7 @@ model korisnik {
   idkorisnik                                                            Int                      @id @default(autoincrement())
   korisnickoime                                                         String                   @db.VarChar(20)
   email                                                                 String                   @db.VarChar(50)
-  lozinka                                                               String                   @db.VarChar(50)
+  lozinka                                                               String                   
   verificiran_email                                                     Boolean                  @default(false)
   avatarurl                                                             String?                  @db.VarChar(300)
   izgledapp                                                             Int                      @default(0)
