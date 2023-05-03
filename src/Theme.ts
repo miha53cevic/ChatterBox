@@ -9,6 +9,24 @@ export const roboto = Roboto({
     fallback: ['Helvetica', 'Arial', 'sans-serif'],
 });
 
+const BluishDarkTheme = responsiveFontSizes(createTheme({
+    palette: {
+        mode: 'light',
+        primary: {
+            main: '#e4f1fe',
+        },
+        secondary: {
+            main: '#8dc6ff',
+        },
+        error: {
+            main: red.A400,
+        },
+    },
+    typography: {
+        fontFamily: roboto.style.fontFamily,
+    },
+}));
+
 const PurpleDarkTheme = responsiveFontSizes(createTheme({
     palette: {
         mode: 'dark',
@@ -45,7 +63,7 @@ const DefaultTheme = responsiveFontSizes(createTheme({
 }));
 
 export const themes = {
-    DefaultTheme, PurpleDarkTheme
+    DefaultTheme, PurpleDarkTheme, BluishDarkTheme
 };
 
 export default DefaultTheme;

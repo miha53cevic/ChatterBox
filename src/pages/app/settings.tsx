@@ -93,8 +93,8 @@ const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>>
                             <Grid item xs={12} md={6}>
                                 <Stack direction='column' justifyContent='center' alignItems='center' height='100%'>
                                     <Box>
-                                        <Typography variant='h4'>Username</Typography>
-                                        <Typography>Email</Typography>
+                                        <Typography variant='h4'>{user.korisnickoime}</Typography>
+                                        <Typography>{user.email}</Typography>
                                         <br/>
                                         <Button variant='contained' onClick={() => setOpenChangePass(true)}>Change password</Button>
                                     </Box>
