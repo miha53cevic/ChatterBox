@@ -8,6 +8,8 @@ import ChooseThemeColors, { CurrentThemeColorIcon } from "../../features/ChooseT
 import withSession from "../../lib/withSession";
 import DialogCustomForm from "../../components/Dialogs/CustomForm";
 import { ControlledPasswordTextField } from "../../components/Controlled/ControlledPasswordTextField";
+import { S3Upload } from "../../lib/S3Bucket";
+import useErrorAlert from "../../hooks/useErrorAlert";
 
 export const getServerSideProps = withSession(async ({ req }) => {
     const user = req.session.korisnik;
@@ -21,6 +23,8 @@ export const getServerSideProps = withSession(async ({ req }) => {
 
 const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ user }) => {
 
+    const showError = useErrorAlert();
+
     const [openChooseThemeColor, setOpenChooseThemeColor] = useState(false);
     const [openChangePass, setOpenChangePass] = useState(false);
 
@@ -31,7 +35,19 @@ const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>>
     };
 
     const handleChangeImage: ChangeEventHandler<HTMLInputElement> = async (e) => {
-        const file = e.target.files ? e.target.files[0] : null;
+        if (!e.target.files) return;
+
+        const file = e.target.files[0];
+        const ext = e.target.files[0].type.split('/')[1];
+
+        try {
+            const response = await S3Upload(`avatar_${user.idkorisnik}.${ext}`, true, file);
+            console.log(response);
+
+        } catch(err) {
+            showError(`There was an error with uploading new avatar`);
+            console.error(err);
+        }
     };
 
     return (
