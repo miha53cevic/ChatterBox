@@ -30,7 +30,7 @@ model multimedijalnizapis {
   url       String    @db.VarChar(500)
   idporuka  Int
   timestamp DateTime  @db.Timestamp(6) @default(now())
-  poruka    poruka    @relation(fields: [idporuka], references: [idporuka], onDelete: NoAction, onUpdate: NoAction)
+  poruka    poruka    @relation(fields: [idporuka], references: [idporuka], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model poruka {
@@ -40,16 +40,16 @@ model poruka {
   tekst               String                @db.VarChar(500)
   timestamp           DateTime              @db.Timestamp(6) @default(now())
   multimedijalnizapis multimedijalnizapis[]
-  korisnik            korisnik              @relation(fields: [idposiljatelj], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
-  razgovor            razgovor              @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: NoAction, onUpdate: NoAction)
+  korisnik            korisnik              @relation(fields: [idposiljatelj], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
+  razgovor            razgovor              @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: Cascade, onUpdate: NoAction)
   reakcijanaporuku    reakcijanaporuku[]
 }
 
 model prijatelji {
   idkorisnik1                               Int
   idkorisnik2                               Int
-  korisnik_prijatelji_idkorisnik1Tokorisnik korisnik @relation("prijatelji_idkorisnik1Tokorisnik", fields: [idkorisnik1], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
-  korisnik_prijatelji_idkorisnik2Tokorisnik korisnik @relation("prijatelji_idkorisnik2Tokorisnik", fields: [idkorisnik2], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
+  korisnik_prijatelji_idkorisnik1Tokorisnik korisnik @relation("prijatelji_idkorisnik1Tokorisnik", fields: [idkorisnik1], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
+  korisnik_prijatelji_idkorisnik2Tokorisnik korisnik @relation("prijatelji_idkorisnik2Tokorisnik", fields: [idkorisnik2], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([idkorisnik1, idkorisnik2])
 }
@@ -57,9 +57,9 @@ model prijatelji {
 model pripadarazgovoru {
   idkorisnik      Int
   idrazgovor      Int
-  omiljenrazgovor Boolean
-  korisnik        korisnik @relation(fields: [idkorisnik], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
-  razgovor        razgovor @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: NoAction, onUpdate: NoAction)
+  omiljenrazgovor Boolean  @default(false)
+  korisnik        korisnik @relation(fields: [idkorisnik], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
+  razgovor        razgovor @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([idkorisnik, idrazgovor])
 }
@@ -68,6 +68,7 @@ model razgovor {
   idrazgovor       Int                @id @default(autoincrement())
   avatarurl        String?            @db.VarChar(300)
   grupa            Boolean
+  nazivGrupe       String?             @db.VarChar(100)
   poruka           poruka[]
   pripadarazgovoru pripadarazgovoru[]
 }
@@ -76,7 +77,7 @@ model reakcijanaporuku {
   idreakcijanaporuku Int    @id @default(autoincrement())
   emoticon           String
   idporuka           Int
-  poruka             poruka @relation(fields: [idporuka], references: [idporuka], onDelete: NoAction, onUpdate: NoAction)
+  poruka             poruka @relation(fields: [idporuka], references: [idporuka], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model status {
@@ -92,9 +93,9 @@ model zahtjevzaprijateljstvo {
   poslantimestamp                                         DateTime  @db.Timestamp(6)    @default(now())
   prihvacentimestamp                                      DateTime? @db.Timestamp(6)
   odbijentimestamp                                        DateTime? @db.Timestamp(6)
-  korisnik_zahtjevzaprijateljstvo_idposiljateljTokorisnik korisnik  @relation("zahtjevzaprijateljstvo_idposiljateljTokorisnik", fields: [idposiljatelj], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
-  korisnik_zahtjevzaprijateljstvo_idprimateljTokorisnik   korisnik  @relation("zahtjevzaprijateljstvo_idprimateljTokorisnik", fields: [idprimatelj], references: [idkorisnik], onDelete: NoAction, onUpdate: NoAction)
-  status                                                  status    @relation(fields: [nazivstatus], references: [nazivstatus], onDelete: NoAction, onUpdate: NoAction)
+  korisnik_zahtjevzaprijateljstvo_idposiljateljTokorisnik korisnik  @relation("zahtjevzaprijateljstvo_idposiljateljTokorisnik", fields: [idposiljatelj], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
+  korisnik_zahtjevzaprijateljstvo_idprimateljTokorisnik   korisnik  @relation("zahtjevzaprijateljstvo_idprimateljTokorisnik", fields: [idprimatelj], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
+  status                                                  status    @relation(fields: [nazivstatus], references: [nazivstatus], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([idposiljatelj, idprimatelj])
 }

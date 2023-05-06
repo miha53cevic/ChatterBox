@@ -53,7 +53,7 @@ const SearchResult: React.FC<SearchResultProps> = ({ data, mutate, search }) => 
                 submitText="Send"
                 submitAction={handleSendRequest}
             >
-                <TextareaAutosize ref={optionalMsgRef} placeholder="Optional message..." style={{ width: '300px', height: '10rem', backgroundColor: 'gray', borderColor: 'gray', color: 'white' }} />
+                <TextareaAutosize ref={optionalMsgRef} placeholder="Optional message..." style={{ width: '300px', height: '10rem' }} />
             </DialogCustomForm>
             {data.map(({ user, nazivstatus }, index) => (
                 <React.Fragment key={index}>
