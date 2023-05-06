@@ -70,7 +70,7 @@ class ChatsController {
                     createMany: {
                         data: [
                             {
-                                idkorisnik: req.session.korisnik.idkorisnik,
+                                idkorisnik: req.session.korisnik.idkorisnik, // dodaj sebe u grupu
                             },
                             {
                                 idkorisnik: dto.idSudionik,

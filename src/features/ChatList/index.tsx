@@ -101,9 +101,10 @@ export type ChatType = 'single' | 'group';
 
 export interface AddChatProps {
     updateChatList: KeyedMutator<ApiChats>,
+    checkSingleChatExists: (idSudionik: number) => boolean,
 };
 
-const AddChat: React.FC<AddChatProps> = ({ updateChatList }) => {
+const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists }) => {
 
     const showError = useErrorAlert();
 
@@ -118,6 +119,10 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList }) => {
     const groupChat = useForm<GroupChatFormData>();
 
     const onSingleChatSubmit = async (data: SingleChatFormData) => {
+        // Provjeri ako vec postoji chat izmedu njih te ako postoji samo ga otvori
+        if (checkSingleChatExists(data.idSudionik)) return;
+
+        // U suprotnom stvori novi chat
         try {
             const res = await Poster<SingleChatFormData, any>('/api/chats/single', { arg: data });
             await updateChatList();
@@ -187,9 +192,21 @@ export interface Props {
 
 const ChatList: React.FC<Props> = ({ user }) => {
 
-    const { data, error, isLoading, mutate } = useSWR(`/api/chats`, Fetcher<ApiChats>);
-
     const [search, setSearch] = useState("");
+
+    const checkSingleChatExists = (idSudionik: number) => {
+        if (!data || error || isLoading) return true;
+
+        const singleChats = data.filter(chat => chat.pripadarazgovoru.length === 1);
+        const singleChat = singleChats.find(chat => chat.pripadarazgovoru[0].idkorisnik === idSudionik);
+        
+        // TODO - otvori chat s tim userom ako postoji
+        console.log("Chat already exists with user");
+
+        return (singleChat ? true : false);
+    };
+
+    const { data, error, isLoading, mutate } = useSWR(`/api/chats`, Fetcher<ApiChats>);
 
     if (error) return <pre style={{ maxWidth: '200px' }}>{JSON.stringify(error)}</pre>;
     if (!data) return <b>Undefined data error</b>;
@@ -197,7 +214,7 @@ const ChatList: React.FC<Props> = ({ user }) => {
         <Box sx={{ width: 400 }}>
             <Stack direction='row' spacing='1rem' alignItems='center'>
                 <TextField variant='filled' label='Search...' onChange={(e) => setSearch(e.target.value.toLowerCase())} fullWidth />
-                <AddChat updateChatList={mutate} />
+                <AddChat updateChatList={mutate} checkSingleChatExists={checkSingleChatExists} />
             </Stack>
             <br /><br />
             {isLoading ?
