@@ -1,8 +1,10 @@
 import * as React from 'react';
-import { Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, IconButton, ListItemButton, Radio, RadioGroup, Stack, TextField, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, IconButton, ListItemButton, Radio, RadioGroup, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { korisnik } from "@prisma/client";
 import useSWR, { KeyedMutator } from 'swr';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import GroupIcon from '@mui/icons-material/Group';
+import PersonIcon from '@mui/icons-material/Person';
 import { Control, Controller, UseFormSetValue, useForm } from "react-hook-form";
 
 import FriendListItem from "../FriendListItem";
@@ -207,6 +209,11 @@ const ChatList: React.FC<Props> = ({ user, selectChat }) => {
 
     const [search, setSearch] = React.useState("");
 
+    const [chatFilters, setChatFilters] = React.useState<ChatType | null>(null);
+    const handleChatFilters = (e: React.MouseEvent<HTMLElement>, newFilters: ChatType) => {
+        setChatFilters(newFilters);
+    };
+
     const checkSingleChatExists = (idSudionik: number) => {
         if (!data || error || isLoading) return true;
 
@@ -232,11 +239,22 @@ const ChatList: React.FC<Props> = ({ user, selectChat }) => {
                 <TextField variant='filled' label='Search...' onChange={(e) => setSearch(e.target.value.toLowerCase())} fullWidth />
                 <AddChat updateChatList={mutate} checkSingleChatExists={checkSingleChatExists} />
             </Stack>
-            <br /><br />
+            <Typography variant='caption'>Filters</Typography>
+            <ToggleButtonGroup
+                value={chatFilters}
+                onChange={handleChatFilters}
+                exclusive
+                fullWidth
+            >
+                <ToggleButton value={'single' as ChatType}><PersonIcon /></ToggleButton>
+                <ToggleButton value={'group' as ChatType}><GroupIcon /></ToggleButton>
+            </ToggleButtonGroup>
+            <br/>
             {isLoading ?
                 <CircularProgress />
                 :
                 data.filter(item => item.grupa ? item.nazivGrupe!.toLowerCase().includes(search) : item.pripadarazgovoru[0]!.korisnik.korisnickoime.toLowerCase().includes(search))
+                    .filter(item => !chatFilters ? item : (chatFilters == 'single' ? item.grupa == false : item.grupa == true))
                     .map((item, index) => {
                         const korisnik = item.pripadarazgovoru[0].korisnik;
                         // Ako je grupa postavi da je username nazivGrupe i avatarurl od grupe
