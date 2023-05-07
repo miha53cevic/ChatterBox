@@ -1,16 +1,15 @@
 import * as React from 'react';
 import { Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, IconButton, ListItemButton, Radio, RadioGroup, Stack, TextField, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { korisnik } from "@prisma/client";
-import { useState } from "react";
 import useSWR, { KeyedMutator } from 'swr';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { Control, Controller, UseFormSetValue, useForm } from "react-hook-form";
 
-import { Fetcher, Poster } from "../../lib/Fetcher";
 import FriendListItem from "../FriendListItem";
 import DialogCustomForm from "../../components/Dialogs/CustomForm";
 import { ControlledOutlineTextfield } from '../../components/Controlled/ControlledTextfield';
 import useErrorAlert from '../../hooks/useErrorAlert';
+import { Fetcher, Poster } from "../../lib/Fetcher";
 
 import type { ApiChats, ApiFriends } from "../../types/apiTypes";
 
@@ -21,30 +20,36 @@ export interface ChooseSingleFriendProps {
 };
 
 const ChooseSingleFriend: React.FC<ChooseSingleFriendProps> = ({ control }) => {
+    const [search, setSearch] = React.useState("");
+
     const { data, isLoading, error } = useSWR('/api/friends', Fetcher<ApiFriends>);
 
     if (isLoading) return <CircularProgress />;
     if (error) return <pre>{JSON.stringify(error)}</pre>;
     if (!data) return <b>Data does not exist!</b>;
     return (
-        <Controller
-            control={control}
-            name='idSudionik'
-            defaultValue={-1}
-            render={({ field }) => (
-                <RadioGroup {...field}
-                    onChange={(e) => field.onChange(Number.parseInt(e.target.value))}
-                >
-                    {data.map(user => (
-                        <React.Fragment key={user.idkorisnik}>
-                            <FriendListItem user={user}>
-                                <FormControlLabel value={user.idkorisnik} control={<Radio />} label='' required />
-                            </FriendListItem>
-                        </React.Fragment>
-                    ))}
-                </RadioGroup>
-            )}
-        />
+        <>
+            <br/>
+            <TextField variant='filled' label='Search...' onChange={(e) => setSearch(e.target.value.toLowerCase())} fullWidth />
+            <Controller
+                control={control}
+                name='idSudionik'
+                defaultValue={-1}
+                render={({ field }) => (
+                    <RadioGroup {...field}
+                        onChange={(e) => field.onChange(Number.parseInt(e.target.value))}
+                    >
+                        {data.map(user => (
+                            <Box key={user.idkorisnik} display={user.korisnickoime.toLowerCase().includes(search) ? undefined : 'none'}>
+                                <FriendListItem user={user}>
+                                    <FormControlLabel value={user.idkorisnik} control={<Radio />} label='' required />
+                                </FriendListItem>
+                            </Box>
+                        ))}
+                    </RadioGroup>
+                )}
+            />
+        </>
     );
 };
 
@@ -53,7 +58,8 @@ export interface ChooseGroupFriendProps {
 };
 
 const ChooseGroupFriends: React.FC<ChooseGroupFriendProps> = ({ setValue }) => {
-    const [selected, setSelected] = useState<number[]>([]);
+    const [search, setSearch] = React.useState("");
+    const [selected, setSelected] = React.useState<number[]>([]);
     const handleSelect = (id: number, checked: boolean) => {
         if (!checked) {
             setSelected(oldData => oldData.filter(i => i !== id));
@@ -74,15 +80,19 @@ const ChooseGroupFriends: React.FC<ChooseGroupFriendProps> = ({ setValue }) => {
     if (error) return <pre>{JSON.stringify(error)}</pre>;
     if (!data) return <b>Data does not exist!</b>;
     return (
-        <FormGroup>
-            {data.map(user => (
-                <React.Fragment key={user.idkorisnik}>
-                    <FriendListItem user={user}>
-                        <FormControlLabel control={<Checkbox onChange={(e, checked) => handleSelect(user.idkorisnik, checked)} />} label='' />
-                    </FriendListItem>
-                </React.Fragment>
-            ))}
-        </FormGroup>
+        <>
+            <br/>
+            <TextField variant='filled' label='Search...' onChange={(e) => setSearch(e.target.value.toLowerCase())} fullWidth />
+            <FormGroup>
+                {data.map(user => (
+                    <Box key={user.idkorisnik} display={user.korisnickoime.toLowerCase().includes(search) ? undefined : 'none'}>
+                        <FriendListItem user={user}>
+                            <FormControlLabel control={<Checkbox onChange={(e, checked) => handleSelect(user.idkorisnik, checked)} />} label='' />
+                        </FriendListItem>
+                    </Box>
+                ))}
+            </FormGroup>
+        </>
     );
 };
 
@@ -108,8 +118,8 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists
 
     const showError = useErrorAlert();
 
-    const [openDialog, setOpenDialog] = useState(false);
-    const [typeChat, setTypeChat] = useState<ChatType>('single');
+    const [openDialog, setOpenDialog] = React.useState(false);
+    const [typeChat, setTypeChat] = React.useState<ChatType>('single');
 
     const handleAddChat = () => {
         setOpenDialog(true);
@@ -126,6 +136,7 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists
         try {
             const res = await Poster<SingleChatFormData, any>('/api/chats/single', { arg: data });
             await updateChatList();
+            singleChat.reset();
         } catch (err) {
             showError(JSON.stringify(err));
         }
@@ -140,6 +151,7 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists
         try {
             const res = await Poster<GroupChatFormData, any>('/api/chats/group', { arg: data });
             await updateChatList();
+            groupChat.reset();
         } catch (err) {
             showError(JSON.stringify(err));
         }
@@ -192,7 +204,7 @@ export interface Props {
 
 const ChatList: React.FC<Props> = ({ user }) => {
 
-    const [search, setSearch] = useState("");
+    const [search, setSearch] = React.useState("");
 
     const checkSingleChatExists = (idSudionik: number) => {
         if (!data || error || isLoading) return true;
