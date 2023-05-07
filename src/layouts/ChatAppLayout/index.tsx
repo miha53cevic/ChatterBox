@@ -11,9 +11,10 @@ import useColorTheme from "../../hooks/useColorTheme";
 export interface Props {
     children: React.ReactNode,
     user: korisnik,
+    fullscreen?: boolean,
 };
 
-const ChatAppLayout: React.FC<Props> = ({ children, user }) => {
+const ChatAppLayout: React.FC<Props> = ({ children, user, fullscreen }) => {
 
     // Set users colour theme
     const { setTheme } = useColorTheme();
@@ -23,7 +24,21 @@ const ChatAppLayout: React.FC<Props> = ({ children, user }) => {
     }, [setTheme, user]);
 
     const desktop = useDesktop();
-    if (desktop) {
+    if (desktop && fullscreen) {
+        return (
+            <main>
+                <Stack direction='row' sx={{ maxHeight: '100vh' }}>
+                    <Box flexGrow={0} overflow='auto'>
+                        <LeftAppBar />
+                    </Box>
+                    <Box flexGrow={1}>
+                        {children}
+                    </Box>
+                </Stack>
+            </main>
+        );
+    }
+    else if (desktop) {
         return (
             <main>
                 <Stack direction='row' sx={{ minHeight: '100vh' }}>
@@ -37,7 +52,7 @@ const ChatAppLayout: React.FC<Props> = ({ children, user }) => {
             </main>
         );
     }
-    return (
+    else return (
         <main>
             <Stack direction='column' sx={{ minHeight: '100vh' }}>
                 <Box flexGrow={1}>

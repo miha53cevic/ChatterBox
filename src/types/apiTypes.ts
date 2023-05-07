@@ -6,11 +6,13 @@ export interface UsersWithSimiliarNameData {
 };
 export type ApiUsersWithSimiliarName = UsersWithSimiliarNameData[];
 
-export type ApiChats = (razgovor & {
+export type Chat = (razgovor & {
     pripadarazgovoru: (pripadarazgovoru & {
         korisnik: korisnik;
     })[];
-})[];
+});
+
+export type ApiChats = Chat[];
 
 export type ApiFriendRequests = (zahtjevzaprijateljstvo & {
     korisnik_zahtjevzaprijateljstvo_idposiljateljTokorisnik: korisnik;

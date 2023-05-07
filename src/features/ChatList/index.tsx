@@ -11,11 +11,11 @@ import { ControlledOutlineTextfield } from '../../components/Controlled/Controll
 import useErrorAlert from '../../hooks/useErrorAlert';
 import { Fetcher, Poster } from "../../lib/Fetcher";
 
-import type { ApiChats, ApiFriends } from "../../types/apiTypes";
+import type { ApiChats, ApiFriends, Chat } from "../../types/apiTypes";
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-export interface ChooseSingleFriendProps {
+interface ChooseSingleFriendProps {
     control: Control<SingleChatFormData, any>,
 };
 
@@ -53,7 +53,7 @@ const ChooseSingleFriend: React.FC<ChooseSingleFriendProps> = ({ control }) => {
     );
 };
 
-export interface ChooseGroupFriendProps {
+interface ChooseGroupFriendProps {
     setValue: UseFormSetValue<GroupChatFormData>,
 };
 
@@ -109,7 +109,7 @@ export interface GroupChatFormData {
 
 export type ChatType = 'single' | 'group';
 
-export interface AddChatProps {
+interface AddChatProps {
     updateChatList: KeyedMutator<ApiChats>,
     checkSingleChatExists: (idSudionik: number) => boolean,
 };
@@ -200,9 +200,10 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists
 
 export interface Props {
     user: korisnik,
+    selectChat: (chat: Chat) => void,
 };
 
-const ChatList: React.FC<Props> = ({ user }) => {
+const ChatList: React.FC<Props> = ({ user, selectChat }) => {
 
     const [search, setSearch] = React.useState("");
 
@@ -212,8 +213,11 @@ const ChatList: React.FC<Props> = ({ user }) => {
         const singleChats = data.filter(chat => chat.pripadarazgovoru.length === 1);
         const singleChat = singleChats.find(chat => chat.pripadarazgovoru[0].idkorisnik === idSudionik);
         
-        // TODO - otvori chat s tim userom ako postoji
-        console.log("Chat already exists with user");
+        // Otvori chat s tim userom ako postoji
+        if (singleChat) {
+            console.log("Chat already exists with user");
+            selectChat(singleChat);
+        }
 
         return (singleChat ? true : false);
     };
@@ -241,7 +245,7 @@ const ChatList: React.FC<Props> = ({ user }) => {
                             korisnik.avatarurl = item.avatarurl;
                         }
                         return (
-                            <ListItemButton key={index}>
+                            <ListItemButton key={index} onClick={() => selectChat(item)}>
                                 <FriendListItem user={korisnik} />
                             </ListItemButton>
                         );
