@@ -32,7 +32,7 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                         </Paper>
                     </Box>
                     <Box flex='1'>
-                        <ChatBar selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} />
+                        <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} />
                     </Box>
                 </Stack>
             </ChatAppLayout>

@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import * as React from 'react';
 import { Box, IconButton, Paper, Stack, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
@@ -8,6 +9,8 @@ import { Chat } from "../../types/apiTypes";
 import { ControlledOutlineTextfield } from "../../components/Controlled/ControlledTextfield";
 import { useForm } from "react-hook-form";
 import LoadingButton from "../../components/LoadingButton";
+import socket from '../../lib/SocketIOClient';
+import { korisnik } from '@prisma/client';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -66,15 +69,48 @@ export interface AddChatFormData {
 };
 
 export interface Props {
+    user: korisnik,
     selectedChat: Chat | null,
     closeChat: () => void,
 };
 
-const ChatBar: React.FC<Props> = ({ selectedChat, closeChat }) => {
+const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat }) => {
+
+    React.useEffect(() => {
+        socket.on('connect', () => {
+            console.log("Connected!");
+        });
+        socket.on('disconnect', () => {
+            console.log("Disconnected!");
+        });
+        socket.on("connect_error", (err) => console.error(err.message));
+        socket.on("singleChat", (poruka) => {
+            console.log("Primljena poruka: " + poruka);
+        })
+
+        if (selectedChat) {
+            socket.auth = user;
+            socket.connect();
+        }
+
+        return () => {
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('connect_error');
+            socket.off('singleChat');
+
+            socket.disconnect();
+        };
+    }, [selectedChat, user]);
 
     const { control, handleSubmit, reset } = useForm<AddChatFormData>();
     const onSubmit = (data: AddChatFormData) => {
         reset();
+
+        socket.emit('singleChat', {
+            tekst: data.message,
+            from: user,
+        });
     };
 
     if (!selectedChat) return <></>;
