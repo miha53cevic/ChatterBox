@@ -79,15 +79,16 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     React.useEffect(() => {
         socket.emit("joinChat", selectedChat.idrazgovor);
 
-        socket.on('message', (msg: IMessage) => {
+        const saveReceivedMessage = (msg: IMessage) => {
             setMessages(oldMessages => [...oldMessages, msg]);
-        });
+        };
+        socket.on('message', saveReceivedMessage);
 
         // Reset saved messages from previously open chat
         setMessages([]);
 
         return () => {
-            socket.off('message');
+            socket.off('message', saveReceivedMessage); // makni samo ovaj listener na message, a ne i sve
         };
     }, [user, setMessages, selectedChat]);
 
@@ -103,7 +104,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     const onSubmit = (data: AddChatFormData) => {
         reset();
         socket.emit('message', {
-            idChat: selectedChat!.idrazgovor,
+            idChat: selectedChat.idrazgovor,
             tekst: data.message,
             posiljatelj: user,
             timestamp: new Date().toLocaleString(),
