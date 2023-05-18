@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Paper, Stack, Box } from "@mui/material";
 import { InferGetServerSidePropsType } from "next";
+import { korisnik } from '@prisma/client';
 
 import withSession from "../../lib/withSession";
 import ChatAppLayout from "../../layouts/ChatAppLayout";
@@ -9,6 +10,7 @@ import ChatBar from "../../features/ChatBar";
 import socket from '../../lib/SocketIOClient';
 
 import { Chat } from '../../types/apiTypes';
+import { IConnectedUser } from '../../types';
 
 export const getServerSideProps = withSession(async ({ req }) => {
     const user = req.session.korisnik;
@@ -22,22 +24,17 @@ export const getServerSideProps = withSession(async ({ req }) => {
 
 const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ user }) => {
 
-    // Ovi eventi se uvjek zovu, neovisno o pod komponenti unutar chat
+    const [connectedUsers, setConnectedUsers] = React.useState<IConnectedUser[]>([]);
+
     React.useEffect(() => {
-        socket.on('connect', () => {
-            console.log("SocketIO: Connected!");
+        socket.on('connectedUsers', (connectedUsers: IConnectedUser[]) => {
+            setConnectedUsers([...connectedUsers]);
         });
-        socket.on('disconnect', () => {
-            console.log("SocketIO: Disconnected!");
-        });
-        socket.on("connect_error", (err) => console.error(err.message));
 
         return () => {
-            socket.off('connect');
-            socket.off('disconnect');
-            socket.off('connect_error');
+            socket.off('connectedUsers');
         };
-    }, []);
+    }, [user]);
 
     const [selectedChat, setSelectedChat] = React.useState<Chat | null>(null);
     return (
@@ -46,12 +43,12 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 <Stack direction='row' height='100%'>
                     <Box sx={{ overflowY: 'scroll' }}>
                         <Paper sx={{ padding: '2rem', minHeight: '100%' }}>
-                            <ChatList user={user} selectChat={setSelectedChat} />
+                            <ChatList user={user} selectChat={setSelectedChat} connectedUsers={connectedUsers} />
                         </Paper>
                     </Box>
                     <Box flex='1'>
                         {selectedChat ?
-                            <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} />
+                            <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} connectedUsers={connectedUsers} />
                             : null
                         }
                     </Box>

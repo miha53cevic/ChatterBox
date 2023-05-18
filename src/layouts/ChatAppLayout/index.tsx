@@ -1,12 +1,14 @@
-import { useEffect } from "react";
+import * as React from "react";
 import { Box, Stack } from "@mui/material";
 import { korisnik } from "@prisma/client";
 
 import { themes } from "../../Theme";
 import LeftAppBar from "../LeftAppBar";
-import useDesktop from "../../hooks/useDesktop";
 import BottomAppBar from "../BottomAppBar";
+import useDesktop from "../../hooks/useDesktop";
 import useColorTheme from "../../hooks/useColorTheme";
+import socket from "../../lib/SocketIOClient";
+import { useIdleTimer } from "react-idle-timer";
 
 export interface Props {
     children: React.ReactNode,
@@ -16,9 +18,53 @@ export interface Props {
 
 const ChatAppLayout: React.FC<Props> = ({ children, user, fullscreen }) => {
 
+    // Ovi eventi se uvjek zovu, neovisno o pod komponenti unutar /app/...
+    // odnosno svi podkomponenti unutar /app implementiraju ChatAppLayout pa se ovo uvjek zove unutar njih
+    React.useEffect(() => {
+        if (!user) throw new Error("ChatPage: user not defined!");
+
+        socket.on('connect', () => {
+            console.log("SocketIO: Connected!");
+        });
+        socket.on('disconnect', () => {
+            console.log("SocketIO: Disconnected!");
+        });
+        socket.on("connect_error", (err) => console.error(err.message));
+
+        socket.auth = user;
+        socket.connect();
+
+        return () => {
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('connect_error');
+
+            socket.disconnect();
+        };
+    }, [user]);
+
+    /////////////////////////////////////////////////////////////////////////
+
+    // idleTimer for away status
+    const handleIdle = () => {
+        console.log("I'm afk")
+        socket.emit('away');
+    };
+    const handleActiveAgain = () => {
+        console.log("I'm back baby");
+        socket.emit('active');
+    };
+    const idleTimer = useIdleTimer({
+        onIdle: handleIdle,
+        onActive: handleActiveAgain,
+        timeout: 1 * 60 * 1000, // 1 minute(s) to go afk
+    });
+
+    /////////////////////////////////////////////////////////////////////////
+
     // Set users colour theme
     const { setTheme } = useColorTheme();
-    useEffect(() => {
+    React.useEffect(() => {
         setTheme(Object.values(themes)[user.izgledapp]);
         console.log(user);
     }, [setTheme, user]);

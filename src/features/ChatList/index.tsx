@@ -14,6 +14,7 @@ import useErrorAlert from '../../hooks/useErrorAlert';
 import { Fetcher, Poster } from "../../lib/Fetcher";
 
 import type { ApiChats, ApiFriends, Chat } from "../../types/apiTypes";
+import { IConnectedUser } from '../../types';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +32,7 @@ const ChooseSingleFriend: React.FC<ChooseSingleFriendProps> = ({ control }) => {
     if (!data) return <b>Data does not exist!</b>;
     return (
         <>
-            <br/>
+            <br />
             <TextField variant='filled' label='Search...' onChange={(e) => setSearch(e.target.value.toLowerCase())} fullWidth />
             <Controller
                 control={control}
@@ -83,7 +84,7 @@ const ChooseGroupFriends: React.FC<ChooseGroupFriendProps> = ({ setValue }) => {
     if (!data) return <b>Data does not exist!</b>;
     return (
         <>
-            <br/>
+            <br />
             <TextField variant='filled' label='Search...' onChange={(e) => setSearch(e.target.value.toLowerCase())} fullWidth />
             <FormGroup>
                 {data.map(user => (
@@ -203,9 +204,10 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists
 export interface Props {
     user: korisnik,
     selectChat: (chat: Chat) => void,
+    connectedUsers: IConnectedUser[],
 };
 
-const ChatList: React.FC<Props> = ({ user, selectChat }) => {
+const ChatList: React.FC<Props> = ({ user, selectChat, connectedUsers }) => {
 
     const [search, setSearch] = React.useState("");
 
@@ -219,7 +221,7 @@ const ChatList: React.FC<Props> = ({ user, selectChat }) => {
 
         const singleChats = data.filter(chat => chat.pripadarazgovoru.length === 1);
         const singleChat = singleChats.find(chat => chat.pripadarazgovoru[0].idkorisnik === idSudionik);
-        
+
         // Otvori chat s tim userom ako postoji
         if (singleChat) {
             console.log("Chat already exists with user");
@@ -234,7 +236,7 @@ const ChatList: React.FC<Props> = ({ user, selectChat }) => {
     if (error) return <pre style={{ maxWidth: '200px' }}>{JSON.stringify(error)}</pre>;
     if (!data) return <b>Undefined data error</b>;
     return (
-        <Box sx={{ width: 400 }}>
+        <Box sx={{ width: 400, maxWidth: 400 }}>
             <Stack direction='row' spacing='1rem' alignItems='center'>
                 <TextField variant='filled' label='Search...' onChange={(e) => setSearch(e.target.value.toLowerCase())} fullWidth />
                 <AddChat updateChatList={mutate} checkSingleChatExists={checkSingleChatExists} />
@@ -249,7 +251,7 @@ const ChatList: React.FC<Props> = ({ user, selectChat }) => {
                 <ToggleButton value={'single' as ChatType}><PersonIcon /></ToggleButton>
                 <ToggleButton value={'group' as ChatType}><GroupIcon /></ToggleButton>
             </ToggleButtonGroup>
-            <br/>
+            <br />
             {isLoading ?
                 <CircularProgress />
                 :
@@ -262,11 +264,21 @@ const ChatList: React.FC<Props> = ({ user, selectChat }) => {
                             korisnik.korisnickoime = item.nazivGrupe!;
                             korisnik.avatarurl = item.avatarurl;
                         }
-                        return (
+
+                        if (item.grupa) return (
                             <ListItemButton key={index} onClick={() => selectChat(item)}>
                                 <FriendListItem user={korisnik} />
                             </ListItemButton>
                         );
+                        else {
+                            const connectedUser = connectedUsers.find(i => i.user.idkorisnik === korisnik.idkorisnik);
+                            const status = connectedUser ? connectedUser.status : 'offline';
+                            return (
+                                <ListItemButton key={index} onClick={() => selectChat(item)}>
+                                    <FriendListItem user={korisnik} userStatus={status} />
+                                </ListItemButton>
+                            );
+                        }
                     })
             }
         </Box>

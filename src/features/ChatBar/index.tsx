@@ -12,48 +12,52 @@ import LoadingButton from "../../components/LoadingButton";
 import AvatarImage from '../../components/AvatarImage';
 import socket from '../../lib/SocketIOClient';
 import useColorTheme from '../../hooks/useColorTheme';
+import FriendListItem from '../FriendListItem';
 
 import { Chat } from "../../types/apiTypes";
-import { IMessage } from '../../types';
+import { IConnectedUser, IMessage } from '../../types';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 interface ChatBarHeaderProps {
     selectedChat: Chat,
     closeChat: () => void,
+    connectedUsers: IConnectedUser[],
 };
 
-const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat }) => {
+const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, connectedUsers }) => {
+    const korisnik = selectedChat.pripadarazgovoru[0].korisnik;
+    // Ako je grupa postavi da je username nazivGrupe i avatarurl od grupe
+    if (selectedChat.grupa) {
+        korisnik.korisnickoime = selectedChat.nazivGrupe!;
+        korisnik.avatarurl = selectedChat.avatarurl!;
+    }
 
     if (selectedChat.grupa) return (
-        <Stack direction='row' sx={{ my: '1rem', mr: 2, width: '100%' }} spacing='1rem'>
-            <AvatarImage url={selectedChat.avatarurl} />
-            <Box flex='1' alignSelf='center'>
-                <Typography variant='h4'>{selectedChat.nazivGrupe}</Typography>
-            </Box>
-            <Stack direction='row' alignItems='center' spacing='1rem'>
+        <Box sx={{ my: '1rem', mr: 2 }}>
+            <FriendListItem user={korisnik}>
                 <IconButton onClick={closeChat}>
                     <CloseIcon fontSize="large" />
                 </IconButton>
                 <IconButton>
                     <MoreVertIcon fontSize="large" />
                 </IconButton>
-            </Stack>
-        </Stack>
+            </FriendListItem>
+        </Box>
     );
-    else return (
-        <Stack direction='row' sx={{ my: '1rem', mr: 2, width: '100%' }} spacing='1rem'>
-            <AvatarImage url={selectedChat.pripadarazgovoru[0].korisnik.avatarurl} />
-            <Box flex='1' alignSelf='center'>
-                <Typography variant='h4'>{selectedChat.pripadarazgovoru[0].korisnik.korisnickoime}</Typography>
+    else {
+        const connectedUser = connectedUsers.find(i => i.user.idkorisnik === korisnik.idkorisnik);
+        const status = connectedUser ? connectedUser.status : 'offline';
+        return (
+            <Box sx={{ my: '1rem', mr: 2 }}>
+                <FriendListItem user={korisnik} userStatus={status}>
+                    <IconButton onClick={closeChat}>
+                        <CloseIcon fontSize="large" />
+                    </IconButton>
+                </FriendListItem>
             </Box>
-            <Stack direction='row' alignItems='center' spacing='1rem'>
-                <IconButton onClick={closeChat}>
-                    <CloseIcon fontSize="large" />
-                </IconButton>
-            </Stack>
-        </Stack>
-    );
+        );
+    }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,13 +66,11 @@ export interface AddChatFormData {
     message: string,
 };
 
-export interface Props {
+export interface Props extends ChatBarHeaderProps {
     user: korisnik,
-    selectedChat: Chat,
-    closeChat: () => void,
 };
 
-const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat }) => {
+const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUsers }) => {
 
     const [messages, setMessages] = React.useState<IMessage[]>([]);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -81,16 +83,11 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat }) => {
             setMessages(oldMessages => [...oldMessages, msg]);
         });
 
-        socket.auth = user;
-        socket.connect();
-
         // Reset saved messages from previously open chat
         setMessages([]);
 
         return () => {
             socket.off('message');
-
-            socket.disconnect();
         };
     }, [user, setMessages, selectedChat]);
 
@@ -117,14 +114,16 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat }) => {
     return (
         <Stack direction='column' height='100%' maxHeight='100vh'>
             <Paper sx={{ px: '2rem' }}>
-                <ChatBarHeader selectedChat={selectedChat} closeChat={closeChat} />
+                <ChatBarHeader selectedChat={selectedChat} closeChat={closeChat} connectedUsers={connectedUsers} />
             </Paper>
             <Box flex='1' sx={{ padding: '2rem', overflowY: 'auto' }}>
                 {messages.map((msg, i) => (
                     <React.Fragment key={i}>
-                        <Paper sx={{ padding: '1rem', width: 'fit-content', 
-                            backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, 
-                            ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 }}
+                        <Paper sx={{
+                            padding: '1rem', width: 'fit-content', borderRadius: '1rem',
+                            backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined,
+                            ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0
+                        }}
                         >
                             <Stack direction='row' spacing='1rem'>
                                 <AvatarImage url={msg.posiljatelj.avatarurl} width='64px' height='64px' />
@@ -143,7 +142,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat }) => {
                                 </Stack>
                             </Stack>
                         </Paper>
-                        <br/>
+                        <br />
                     </React.Fragment>
                 ))}
                 <div id='messagesEnd' ref={messagesEndRef}></div>
