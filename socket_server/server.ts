@@ -6,18 +6,21 @@ import cors from 'cors';
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 interface IMessage {
+    idChat: number,
     tekst: string,
     posiljatelj: any,
+    timestamp: string,
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 interface ClientToServerEvents {
-    singleChat: (poruka: IMessage) => void,
+    joinChat: (idChat: number) => void,
+    message: (msg: IMessage) => void,
 };
 
 interface ServerToClientEvents {
-    singleChat: (poruka: IMessage) => void,
+    message: (msg: IMessage) => void,
 };
 
 interface InterServerEvents {
@@ -57,19 +60,19 @@ io.use((socket, next) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 io.on('connection', socket => {
-    console.log("Connected: " + socket.id);
-
-    socket.join('room-1');
+    console.log(`Connected: ${socket.id}`);
+    //io.fetchSockets().then(i => console.log(i.map(k => k.id)));
 
     socket.on('disconnect', (reason) => {
-        console.log('User id: ' + socket.id + ' disconnected: ' + reason);
+        console.log(`User id: ${socket.id} disconnected with reason: ${reason}`);
     });
 
-    socket.on('singleChat', (poruka) => {
-        // Posalji u room s tim userom ako postoji
-        socket.to('room-1').emit('singleChat', poruka);
+    socket.on('joinChat', (idChat) => { 
+        socket.join(`chat${idChat}`);
+    });
 
-        // Spremi poruku u bazu
+    socket.on('message', (msg) => {
+        io.in(`chat${msg.idChat}`).emit('message', msg);
     });
 
     socket.onAny((event, ...args) => {

@@ -6,6 +6,7 @@ import withSession from "../../lib/withSession";
 import ChatAppLayout from "../../layouts/ChatAppLayout";
 import ChatList from "../../features/ChatList";
 import ChatBar from "../../features/ChatBar";
+import socket from '../../lib/SocketIOClient';
 
 import { Chat } from '../../types/apiTypes';
 
@@ -21,6 +22,23 @@ export const getServerSideProps = withSession(async ({ req }) => {
 
 const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ user }) => {
 
+    // Ovi eventi se uvjek zovu, neovisno o pod komponenti unutar chat
+    React.useEffect(() => {
+        socket.on('connect', () => {
+            console.log("SocketIO: Connected!");
+        });
+        socket.on('disconnect', () => {
+            console.log("SocketIO: Disconnected!");
+        });
+        socket.on("connect_error", (err) => console.error(err.message));
+
+        return () => {
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('connect_error');
+        };
+    }, []);
+
     const [selectedChat, setSelectedChat] = React.useState<Chat | null>(null);
     return (
         <main>
@@ -32,7 +50,10 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                         </Paper>
                     </Box>
                     <Box flex='1'>
-                        <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} />
+                        {selectedChat ?
+                            <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} />
+                            : null
+                        }
                     </Box>
                 </Stack>
             </ChatAppLayout>

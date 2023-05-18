@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 import { Stack, Box, Typography } from "@mui/material";
 import { korisnik } from "@prisma/client";
+import AvatarImage from "../../components/AvatarImage";
 
 export interface Props {
     user: korisnik,
@@ -14,12 +14,7 @@ export interface Props {
 const FriendListItem: React.FC<Props> = ({ user, children }) => {
     return (
         <Stack direction='row' sx={{ my: '1rem', mr: 2, width: '100%' }} spacing='1rem'>
-            <img src={user.avatarurl || 'https://picsum.photos/200'} 
-                width='100px' 
-                height='100px' 
-                loading="lazy" alt="user_avatar"
-                style={{ borderRadius: '50%', border: 'solid black' }}
-            />
+            <AvatarImage url={user.avatarurl} />
             <Box flex='1' alignSelf='center'>
                 <Typography variant='h4'>{user.korisnickoime}</Typography>
             </Box>
