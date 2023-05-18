@@ -1,0 +1,24 @@
+{
+    "private": true,
+    "name": "socket_server",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/server.js",
+    "scripts": {
+        "start": "node .",
+        "dev": "tsc -w",
+        "nodemon": "nodemon .",
+        "build": "tsc"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "socket.io": "^4.6.1",
+        "typescript": "^5.0.4"
+    },
+    "author": "miha53cevic",
+    "devDependencies": {
+        "@types/express": "^4.17.17",
+        "nodemon": "^2.0.22"
+    }
+}
