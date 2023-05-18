@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const URL = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001'
+const URL = process.env.NODE_ENV === 'production' ? 'https://socketio-miha53cevic.koyeb.app' : 'http://localhost:3001'
 
 const socket = io(URL, { autoConnect: false });
 
