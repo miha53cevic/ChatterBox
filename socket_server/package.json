@@ -18,6 +18,7 @@
     },
     "author": "miha53cevic",
     "devDependencies": {
+        "@types/express": "^4.17.17",
         "nodemon": "^2.0.22"
     }
 }
