@@ -8,7 +8,7 @@
         "start": "node .",
         "dev": "tsc -w",
         "nodemon": "nodemon .",
-        "build": "npm run copyEnv && tsc",
+        "build": "tsc && npm run copyEnv",
         "prisma-generate": "prisma generate",
         "copyEnv": "cp .env ./dist/.env && cp .env.development ./dist/.env.development"
     },
