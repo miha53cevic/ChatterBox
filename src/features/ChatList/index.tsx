@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Box, Checkbox, CircularProgress, FormControlLabel, FormGroup, IconButton, ListItemButton, Radio, RadioGroup, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import { korisnik } from "@prisma/client";
+import { korisnik, razgovor } from "@prisma/client";
 import useSWR, { KeyedMutator } from 'swr';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import GroupIcon from '@mui/icons-material/Group';
@@ -137,7 +137,7 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists
 
         // U suprotnom stvori novi chat
         try {
-            const res = await Poster<SingleChatFormData, any>('/api/chats/single', { arg: data });
+            const res = await Poster<SingleChatFormData, razgovor>('/api/chats/single', { arg: data });
             await updateChatList();
             singleChat.reset();
         } catch (err) {
@@ -152,7 +152,7 @@ const AddChat: React.FC<AddChatProps> = ({ updateChatList, checkSingleChatExists
         }
 
         try {
-            const res = await Poster<GroupChatFormData, any>('/api/chats/group', { arg: data });
+            const res = await Poster<GroupChatFormData, razgovor>('/api/chats/group', { arg: data });
             await updateChatList();
             groupChat.reset();
         } catch (err) {

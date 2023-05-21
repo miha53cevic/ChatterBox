@@ -13,8 +13,9 @@ import AvatarImage from '../../components/AvatarImage';
 import socket from '../../lib/SocketIOClient';
 import useColorTheme from '../../hooks/useColorTheme';
 import FriendListItem from '../FriendListItem';
+import { Fetcher } from '../../lib/Fetcher';
 
-import { Chat } from "../../types/apiTypes";
+import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage } from '../../types';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,17 +76,40 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     const [messages, setMessages] = React.useState<IMessage[]>([]);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
-    // subscribe to socket events and connect
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    // Get all messages from db
     React.useEffect(() => {
-        socket.emit("joinChat", selectedChat.idrazgovor);
-
-        const saveReceivedMessage = (msg: IMessage) => {
-            setMessages(oldMessages => [...oldMessages, msg]);
-        };
-        socket.on('message', saveReceivedMessage);
-
         // Reset saved messages from previously open chat
         setMessages([]);
+
+        (async() => {
+            try {
+                const messages = await Fetcher<ApiGetForChatMessages>(`/api/messages/${selectedChat.idrazgovor}`);
+                const formatedMessages = messages.map(msg => ({
+                    idChat: msg.idrazgovor,
+                    posiljatelj: msg.korisnik,
+                    tekst: msg.tekst,
+                    timestamp: msg.timestamp as unknown as string,
+                } as IMessage));
+                setMessages([...formatedMessages]);
+            } catch(err) {
+                console.error(err);
+            }
+        })();
+    }, [selectedChat, setMessages]);
+
+    // subscribe to messages received & add new real time messages
+    React.useEffect(() => {
+        // Join room just in case it's a newly created one
+        socket.emit('joinChat', selectedChat.idrazgovor);
+
+        const saveReceivedMessage = (msg: IMessage) => {
+            // Check if this is a message for selectedChat
+            if (msg.idChat === selectedChat.idrazgovor)
+                setMessages(oldMessages => [...oldMessages, msg]);
+        };
+        socket.on('message', saveReceivedMessage);
 
         return () => {
             socket.off('message', saveReceivedMessage); // makni samo ovaj listener na message, a ne i sve
@@ -97,7 +121,9 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         if (!messagesEndRef.current) return;
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         console.log("Scrolling to new message");
-    }, [messages]);
+    }, [messages, selectedChat]);
+
+    ////////////////////////////////////////////////////////////////////////////////////////
 
     // On message send
     const { control, handleSubmit, reset } = useForm<AddChatFormData>();
@@ -122,8 +148,8 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                     <React.Fragment key={i}>
                         <Paper sx={{
                             padding: '1rem', width: 'fit-content', borderRadius: '1rem',
-                            backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined,
-                            ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0
+                            backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
+                            ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
                         }}
                         >
                             <Stack direction='row' spacing='1rem'>

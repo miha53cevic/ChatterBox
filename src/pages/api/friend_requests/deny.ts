@@ -19,6 +19,7 @@ class DenyFriendRequest {
         const friendRequest = await prisma.zahtjevzaprijateljstvo.update({
             data: {
                 nazivstatus: 'denied',
+                odbijentimestamp: new Date().toISOString(),
             },
             where: {
                 idposiljatelj_idprimatelj: {

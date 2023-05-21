@@ -2,13 +2,21 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import { PrismaClient, korisnik } from '@prisma/client';
+import * as dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({
+    path: process.env.NODE_ENV === 'production' ? path.resolve(__dirname, '.env') : path.resolve(__dirname, '.env.development'),
+    override: true, // prisma nagadam ucita .env, a override je false kao default
+});
+console.log(process.env.NODE_ENV === 'production' ? 'Running prod' : 'Running dev');
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 interface IMessage {
     idChat: number,
     tekst: string,
-    posiljatelj: any,
+    posiljatelj: korisnik,
     timestamp: string,
 };
 
@@ -32,10 +40,11 @@ interface InterServerEvents {
 };
 
 interface SocketData {
-    user: any,
+    user: korisnik,
     status: IUserStatus,
 };
 
+const prisma = new PrismaClient();
 const app = express();
 const server = http.createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(server, {
@@ -53,14 +62,32 @@ app.get('/', (req, res) => {
 });
 
 // Middleware for when connecting
-io.use((socket, next) => {
+io.use(async (socket, next) => {
     const user = socket.handshake.auth;
     if (!user) {
         return next(new Error("no user data set!"));
     }
     // Save user info to socket
-    socket.data.user = user;
+    socket.data.user = user as korisnik;
     socket.data.status = 'online';
+
+    // Join socket to all it's Chats it belongs to
+    const chats = await prisma.razgovor.findMany({
+        where: {
+            pripadarazgovoru: {
+                some: {
+                    idkorisnik: socket.data.user.idkorisnik,
+                }
+            }
+        },
+        select: {
+            idrazgovor: true,
+        }
+    });
+    for (const { idrazgovor } of chats) {
+        socket.join(`chat${idrazgovor}`);
+    }
+
     next();
 });
 
@@ -80,12 +107,26 @@ io.on('connection', async (socket) => {
         socket.broadcast.emit("connectedUsers", connectedUsers); // send to everyone except disconnecting user
     });
 
-    socket.on('joinChat', (idChat) => { 
+    socket.on('joinChat', (idChat) => {
         socket.join(`chat${idChat}`);
     });
 
-    socket.on('message', (msg) => {
+    socket.on('message', async (msg) => {
         io.in(`chat${msg.idChat}`).emit('message', msg);
+
+        // Save chat message to db
+        try {
+            const newMsg = await prisma.poruka.create({
+                data: {
+                    idrazgovor: msg.idChat,
+                    idposiljatelj: msg.posiljatelj.idkorisnik,
+                    tekst: msg.tekst,
+                },
+            });
+            console.log("DB_LOG: Saving new message to db: ", newMsg);
+        } catch(err) {
+            console.error(err);
+        }
     });
 
     socket.on('away', () => {
@@ -101,7 +142,7 @@ io.on('connection', async (socket) => {
     });
 
     socket.onAny((event, ...args) => {
-        console.log(event, args);
+        console.log("LOG:", event, args);
     });
 });
 

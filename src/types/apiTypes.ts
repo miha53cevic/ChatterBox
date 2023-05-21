@@ -1,4 +1,4 @@
-import { korisnik, pripadarazgovoru, razgovor, zahtjevzaprijateljstvo } from "@prisma/client";
+import { korisnik, poruka, pripadarazgovoru, razgovor, zahtjevzaprijateljstvo } from "@prisma/client";
 
 export interface UsersWithSimiliarNameData {
     user: korisnik,
@@ -21,3 +21,7 @@ export type ApiFriendRequests = (zahtjevzaprijateljstvo & {
 export type ApiSession = korisnik;
 
 export type ApiFriends = korisnik[];
+
+export type ApiGetForChatMessages = (poruka & {
+    korisnik: korisnik;
+})[];
