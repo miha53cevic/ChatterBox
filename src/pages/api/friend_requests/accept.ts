@@ -19,6 +19,7 @@ class AcceptFriendRequest {
         const friendRequest = await prisma.zahtjevzaprijateljstvo.update({
             data: {
                 nazivstatus: 'accepted',
+                prihvacentimestamp: new Date().toISOString(),
             },
             where: {
                 idposiljatelj_idprimatelj: {

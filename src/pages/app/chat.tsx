@@ -29,15 +29,19 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
     const { audio } = useNotificationSound();
 
+    // Get connectedUsers for status display & play sound on receiving message
     React.useEffect(() => {
         socket.on('connectedUsers', (connectedUsers: IConnectedUser[]) => {
             setConnectedUsers([...connectedUsers]);
         });
 
         const notificationOnMessage = (msg: IMessage) => {
+            if (!audio) return;
             // Ako nismo u chatu s tim korisnikom pusti notificationSound
             if (selectedChat === null || selectedChat.idrazgovor !== msg.idChat) {
-                audio?.play();
+                audio.play().catch(err => {
+                    console.error(err);
+                });
             }
         };
         socket.on('message', notificationOnMessage);
