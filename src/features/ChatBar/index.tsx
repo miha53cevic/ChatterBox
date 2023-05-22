@@ -1,9 +1,12 @@
-/* eslint-disable @next/next/no-img-element */
 import * as React from 'react';
-import { Box, IconButton, Paper, Stack, Typography } from "@mui/material";
+import { Box, IconButton, Paper, Stack, TextField, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AddPersonIcon from '@mui/icons-material/PersonAddAlt1';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useForm } from "react-hook-form";
 import { korisnik } from '@prisma/client';
 
@@ -13,7 +16,9 @@ import AvatarImage from '../../components/AvatarImage';
 import socket from '../../lib/SocketIOClient';
 import useColorTheme from '../../hooks/useColorTheme';
 import FriendListItem from '../FriendListItem';
-import { Fetcher } from '../../lib/Fetcher';
+import { Fetcher, Poster } from '../../lib/Fetcher';
+import useErrorAlert from '../../hooks/useErrorAlert';
+import { mutate } from 'swr';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage } from '../../types';
@@ -27,26 +32,65 @@ interface ChatBarHeaderProps {
 };
 
 const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, connectedUsers }) => {
-    const korisnik = selectedChat.pripadarazgovoru[0].korisnik;
-    // Ako je grupa postavi da je username nazivGrupe i avatarurl od grupe
-    if (selectedChat.grupa) {
-        korisnik.korisnickoime = selectedChat.nazivGrupe!;
-        korisnik.avatarurl = selectedChat.avatarurl!;
-    }
+    
+    const showError = useErrorAlert();
 
-    if (selectedChat.grupa) return (
-        <Box sx={{ my: '1rem', mr: 2 }}>
-            <FriendListItem user={korisnik}>
-                <IconButton onClick={closeChat}>
-                    <CloseIcon fontSize="large" />
-                </IconButton>
-                <IconButton>
-                    <MoreVertIcon fontSize="large" />
-                </IconButton>
-            </FriendListItem>
-        </Box>
-    );
-    else {
+    const [editGroupName, setEditGroupName] = React.useState(false);
+    const [displayGroupName, setDisplayGroupName] = React.useState(selectedChat.nazivGrupe);
+    const [newGroupName, setNewGroupName] = React.useState("");
+    const handleGroupNameChange = async () => {
+        setEditGroupName(false);
+        try {
+            const res = await Poster('/api/group/changeName', { arg: { idGroup: selectedChat.idrazgovor, newGroupName: newGroupName } });
+            mutate('/api/chats');
+            setDisplayGroupName(newGroupName);
+        } catch(err) {
+            console.error(err);
+            showError("Couldn't change group name!");
+        }
+    };
+
+    if (selectedChat.grupa) {
+        return (
+            <Box sx={{ my: '1rem', mr: 2 }}>
+                <Stack direction='row' sx={{ my: '1rem', mr: 2, width: '100%' }} spacing='1rem'>
+                    <AvatarImage url={selectedChat.avatarurl} />
+                    <Stack direction='row' flex='1' alignSelf='center' spacing='1rem'>
+                        {editGroupName ? 
+                            <>
+                                <TextField variant='standard' defaultValue={displayGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
+                                <IconButton onClick={() => handleGroupNameChange()}>
+                                    <CheckIcon />
+                                </IconButton>
+                                <IconButton onClick={() => setEditGroupName(false) }>
+                                    <CancelIcon />
+                                </IconButton>
+                            </>
+                            :
+                            <>
+                                <Typography variant='h4'>{displayGroupName}</Typography>
+                                <IconButton onClick={() => setEditGroupName(true)}>
+                                    <EditIcon />
+                                </IconButton>
+                            </>
+                        }
+                    </Stack>
+                    <Stack direction='row' alignItems='center' spacing='1rem'>
+                        <IconButton>
+                            <AddPersonIcon fontSize="large" />
+                        </IconButton>
+                        <IconButton>
+                            <PersonRemoveIcon fontSize='large' />
+                        </IconButton>
+                        <IconButton onClick={closeChat}>
+                            <CloseIcon fontSize="large" />
+                        </IconButton>
+                    </Stack>
+                </Stack>
+            </Box>
+        );
+    } else {
+        const korisnik = selectedChat.pripadarazgovoru[0].korisnik;
         const connectedUser = connectedUsers.find(i => i.user.idkorisnik === korisnik.idkorisnik);
         const status = connectedUser ? connectedUser.status : 'offline';
         return (
@@ -83,17 +127,17 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         // Reset saved messages from previously open chat
         setMessages([]);
 
-        (async() => {
+        (async () => {
             try {
                 const messages = await Fetcher<ApiGetForChatMessages>(`/api/messages/${selectedChat.idrazgovor}`);
                 const formatedMessages = messages.map(msg => ({
                     idChat: msg.idrazgovor,
                     posiljatelj: msg.korisnik,
                     tekst: msg.tekst,
-                    timestamp: msg.timestamp as unknown as string,
+                    timestamp: new Date(msg.timestamp as unknown as string).toLocaleString(),
                 } as IMessage));
                 setMessages([...formatedMessages]);
-            } catch(err) {
+            } catch (err) {
                 console.error(err);
             }
         })();
