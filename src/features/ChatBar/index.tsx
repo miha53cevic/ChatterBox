@@ -3,9 +3,10 @@ import { Box, IconButton, Paper, Stack, TextField, Typography } from "@mui/mater
 import CloseIcon from "@mui/icons-material/Close";
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import AddPersonIcon from '@mui/icons-material/PersonAddAlt1';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import LeaveGroupIcon from '@mui/icons-material/ExitToApp';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
+import AddPhoto from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { useForm } from "react-hook-form";
 import { korisnik } from '@prisma/client';
@@ -16,12 +17,14 @@ import AvatarImage from '../../components/AvatarImage';
 import socket from '../../lib/SocketIOClient';
 import useColorTheme from '../../hooks/useColorTheme';
 import FriendListItem from '../FriendListItem';
-import { Fetcher, Poster } from '../../lib/Fetcher';
+import { Deleter, Fetcher, Poster } from '../../lib/Fetcher';
 import useErrorAlert from '../../hooks/useErrorAlert';
 import { mutate } from 'swr';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage } from '../../types';
+import DialogCustomForm from '../../components/Dialogs/CustomForm';
+import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -32,8 +35,13 @@ interface ChatBarHeaderProps {
 };
 
 const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, connectedUsers }) => {
-    
+
     const showError = useErrorAlert();
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    React.useEffect(() => {
+        setDisplayGroupName(selectedChat.nazivGrupe);
+    }, [selectedChat]);
 
     const [editGroupName, setEditGroupName] = React.useState(false);
     const [displayGroupName, setDisplayGroupName] = React.useState(selectedChat.nazivGrupe);
@@ -44,50 +52,98 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
             const res = await Poster('/api/group/changeName', { arg: { idGroup: selectedChat.idrazgovor, newGroupName: newGroupName } });
             mutate('/api/chats');
             setDisplayGroupName(newGroupName);
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             showError("Couldn't change group name!");
         }
     };
+    const handleGroupLeave = async () => {
+        try {
+            const res = await Deleter(`/api/group/leaveGroup/${selectedChat.idrazgovor}`)
+            mutate('/api/chats');
+            closeChat();
+        } catch (err) {
+            console.error(err);
+            showError("Error on leaveing group, please try again!");
+        }
+    };
+    const [openDialog, setOpenDialog] = React.useState(false);
+    const addSudionik = useForm<GroupChatFormData>();
+    const handleAddSudionik = async (data: GroupChatFormData) => {
+        if (data.idSudionici.length < 1) return;
+
+        for (const i of data.idSudionici) {
+            if (selectedChat.pripadarazgovoru.some(r => r.idkorisnik === i)) {
+                const korisnik = selectedChat.pripadarazgovoru.filter(user => user.idkorisnik === i);
+                showError(`User: ${korisnik[0].korisnik.korisnickoime} is already in group chat!`);
+                return;
+            }
+        }
+
+        try {
+            const res = await Poster('/api/group/addUsersToGroup', { arg: { idGroup: selectedChat.idrazgovor, idUsers: data.idSudionici } });
+        } catch(err) {
+            console.error(err);
+            showError("Error on adding a new friend to group chat, try again later.");
+        }
+    };
+    ///////////////////////////////////////////////////////////////////////////////////////
 
     if (selectedChat.grupa) {
         return (
-            <Box sx={{ my: '1rem', mr: 2 }}>
-                <Stack direction='row' sx={{ my: '1rem', mr: 2, width: '100%' }} spacing='1rem'>
-                    <AvatarImage url={selectedChat.avatarurl} />
-                    <Stack direction='row' flex='1' alignSelf='center' spacing='1rem'>
-                        {editGroupName ? 
-                            <>
-                                <TextField variant='standard' defaultValue={displayGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
-                                <IconButton onClick={() => handleGroupNameChange()}>
-                                    <CheckIcon />
-                                </IconButton>
-                                <IconButton onClick={() => setEditGroupName(false) }>
-                                    <CancelIcon />
-                                </IconButton>
-                            </>
-                            :
-                            <>
-                                <Typography variant='h4'>{displayGroupName}</Typography>
-                                <IconButton onClick={() => setEditGroupName(true)}>
-                                    <EditIcon />
-                                </IconButton>
-                            </>
-                        }
+            <>
+                <DialogCustomForm
+                    open={openDialog}
+                    handleClose={() => setOpenDialog(false)}
+                    title="Add new friend to chat"
+                    text=""
+                    submitText="Add friend to chat"
+                    submitForForm='form'
+                >
+                    <form onSubmit={addSudionik.handleSubmit(handleAddSudionik)} id='form'>
+                        <ChooseGroupFriends setValue={addSudionik.setValue} />
+                    </form>
+                </DialogCustomForm>
+                <Box sx={{ my: '1rem', mr: 2 }}>
+                    <Stack direction='row' sx={{ my: '1rem', mr: 2, width: '100%' }} spacing='1rem'>
+                        <AvatarImage url={selectedChat.avatarurl} />
+                        <Stack direction='row' flex='1' alignSelf='center' spacing='1rem'>
+                            {editGroupName ?
+                                <>
+                                    <TextField variant='standard' defaultValue={displayGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
+                                    <IconButton onClick={() => handleGroupNameChange()}>
+                                        <CheckIcon />
+                                    </IconButton>
+                                    <IconButton onClick={() => setEditGroupName(false)}>
+                                        <CancelIcon />
+                                    </IconButton>
+                                </>
+                                :
+                                <>
+                                    <Typography variant='h4'>{displayGroupName}</Typography>
+                                    <IconButton onClick={() => setEditGroupName(true)}>
+                                        <EditIcon />
+                                    </IconButton>
+                                </>
+                            }
+                        </Stack>
+                        <Stack direction='row' alignItems='center' spacing='1rem'>
+                            <IconButton onClick={() => setOpenDialog(true)}>
+                                <AddPersonIcon fontSize="large" />
+                            </IconButton>
+                            <IconButton>
+                                <AddPhoto fontSize='large' />
+                            </IconButton>
+                            <IconButton onClick={handleGroupLeave}>
+                                <LeaveGroupIcon fontSize='large' />
+                            </IconButton>
+                            <IconButton onClick={closeChat}>
+                                <CloseIcon fontSize="large" />
+                            </IconButton>
+                        </Stack>
                     </Stack>
-                    <Stack direction='row' alignItems='center' spacing='1rem'>
-                        <IconButton>
-                            <AddPersonIcon fontSize="large" />
-                        </IconButton>
-                        <IconButton>
-                            <PersonRemoveIcon fontSize='large' />
-                        </IconButton>
-                        <IconButton onClick={closeChat}>
-                            <CloseIcon fontSize="large" />
-                        </IconButton>
-                    </Stack>
-                </Stack>
-            </Box>
+                </Box>
+            </>
         );
     } else {
         const korisnik = selectedChat.pripadarazgovoru[0].korisnik;

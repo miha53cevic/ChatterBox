@@ -60,7 +60,7 @@ interface ChooseGroupFriendProps {
     setValue: UseFormSetValue<GroupChatFormData>,
 };
 
-const ChooseGroupFriends: React.FC<ChooseGroupFriendProps> = ({ setValue }) => {
+export const ChooseGroupFriends: React.FC<ChooseGroupFriendProps> = ({ setValue }) => {
     const [search, setSearch] = React.useState("");
     const [selected, setSelected] = React.useState<number[]>([]);
     const handleSelect = (id: number, checked: boolean) => {
