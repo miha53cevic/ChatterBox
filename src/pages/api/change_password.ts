@@ -14,7 +14,7 @@ class ChangePasswordDTO {
 class ChangePasswordController {
     @Post()
     @HttpCode(200)
-    public async changeTheme(@Req() req: NextApiRequest, @Body(ValidationPipe) dto: ChangePasswordDTO) {
+    public async changePassword(@Req() req: NextApiRequest, @Body(ValidationPipe) dto: ChangePasswordDTO) {
         if (!req.session.korisnik) throw new UnauthorizedException('User not logged in!');
 
         const encryptedPass = bcrypt.hashSync(dto.newPassword, 10);
