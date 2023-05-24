@@ -14,7 +14,7 @@ import useErrorAlert from '../../hooks/useErrorAlert';
 import { Fetcher, Poster } from "../../lib/Fetcher";
 
 import type { ApiChats, ApiFriends, Chat } from "../../types/apiTypes";
-import { IConnectedUser } from '../../types';
+import { IConnectedUser, INotification } from '../../types';
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -205,9 +205,10 @@ export interface Props {
     user: korisnik,
     selectChat: (chat: Chat) => void,
     connectedUsers: IConnectedUser[],
+    notifications: INotification[],
 };
 
-const ChatList: React.FC<Props> = ({ user, selectChat, connectedUsers }) => {
+const ChatList: React.FC<Props> = ({ user, selectChat, connectedUsers, notifications }) => {
 
     const [search, setSearch] = React.useState("");
 
@@ -264,10 +265,16 @@ const ChatList: React.FC<Props> = ({ user, selectChat, connectedUsers }) => {
                             korisnik.korisnickoime = item.nazivGrupe!;
                             korisnik.avatarurl = item.avatarurl;
                         }
-
+                        const notification = notifications.find(n => n.idChat === item.idrazgovor);
                         if (item.grupa) return (
                             <ListItemButton key={index} onClick={() => selectChat(item)}>
                                 <FriendListItem user={korisnik} />
+                                {notification ?
+                                    <Typography sx={{ backgroundColor: 'red', width: '2rem', textAlign: 'center', color: 'white', borderRadius: '0.5rem' }}>
+                                        {notification.unreadCount}
+                                    </Typography>
+                                    : null
+                                }
                             </ListItemButton>
                         );
                         else {
@@ -276,6 +283,12 @@ const ChatList: React.FC<Props> = ({ user, selectChat, connectedUsers }) => {
                             return (
                                 <ListItemButton key={index} onClick={() => selectChat(item)}>
                                     <FriendListItem user={korisnik} userStatus={status} />
+                                    {notification ?
+                                        <Typography sx={{ backgroundColor: 'red', width: '2rem', textAlign: 'center', color: 'white', borderRadius: '0.5rem' }}>
+                                            {notification.unreadCount}
+                                        </Typography>
+                                        : null
+                                    }
                                 </ListItemButton>
                             );
                         }

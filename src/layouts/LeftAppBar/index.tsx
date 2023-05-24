@@ -28,11 +28,6 @@ const LeftAppBar: React.FC<Props> = ({ color }) => {
                             <ChatIcon fontSize='large' />
                         </IconButton>
                     </UnstyledNextLink>
-                    <UnstyledNextLink href={'/app/favourites'}>
-                        <IconButton>
-                            <StarIcon fontSize='large' />
-                        </IconButton>
-                    </UnstyledNextLink>
                     <UnstyledNextLink href={'/app/friends'}>
                         <IconButton>
                             <FriendsIcon fontSize='large' />

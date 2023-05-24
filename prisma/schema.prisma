@@ -43,6 +43,7 @@ model poruka {
   korisnik            korisnik              @relation(fields: [idposiljatelj], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
   razgovor            razgovor              @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: Cascade, onUpdate: NoAction)
   reakcijanaporuku    reakcijanaporuku[]
+  pripadarazgovoru    pripadarazgovoru[]
 }
 
 model prijatelji {
@@ -57,9 +58,10 @@ model prijatelji {
 model pripadarazgovoru {
   idkorisnik      Int
   idrazgovor      Int
-  omiljenrazgovor Boolean  @default(false)
+  idzadnjaporuka  Int?
   korisnik        korisnik @relation(fields: [idkorisnik], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
   razgovor        razgovor @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: Cascade, onUpdate: NoAction)
+  poruka          poruka?  @relation(fields: [idzadnjaporuka], references: [idporuka], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([idkorisnik, idrazgovor])
 }

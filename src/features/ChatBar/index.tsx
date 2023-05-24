@@ -10,6 +10,7 @@ import AddPhoto from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { useForm } from "react-hook-form";
 import { korisnik } from '@prisma/client';
+import { mutate } from 'swr';
 
 import { ControlledOutlineTextfield } from "../../components/Controlled/ControlledTextfield";
 import LoadingButton from "../../components/LoadingButton";
@@ -19,12 +20,11 @@ import useColorTheme from '../../hooks/useColorTheme';
 import FriendListItem from '../FriendListItem';
 import { Deleter, Fetcher, Poster } from '../../lib/Fetcher';
 import useErrorAlert from '../../hooks/useErrorAlert';
-import { mutate } from 'swr';
+import DialogCustomForm from '../../components/Dialogs/CustomForm';
+import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage } from '../../types';
-import DialogCustomForm from '../../components/Dialogs/CustomForm';
-import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -169,9 +169,10 @@ export interface AddChatFormData {
 
 export interface Props extends ChatBarHeaderProps {
     user: korisnik,
+    readAllInChat: (idChat: number) => void,
 };
 
-const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUsers }) => {
+const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUsers, readAllInChat }) => {
 
     const [messages, setMessages] = React.useState<IMessage[]>([]);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -188,6 +189,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                 const messages = await Fetcher<ApiGetForChatMessages>(`/api/messages/${selectedChat.idrazgovor}`);
                 const formatedMessages = messages.map(msg => ({
                     idChat: msg.idrazgovor,
+                    idMsg: msg.idporuka,
                     posiljatelj: msg.korisnik,
                     tekst: msg.tekst,
                     timestamp: new Date(msg.timestamp as unknown as string).toLocaleString(),
@@ -197,24 +199,25 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                 console.error(err);
             }
         })();
-    }, [selectedChat, setMessages]);
+    }, [selectedChat]);
 
     // subscribe to messages received & add new real time messages
     React.useEffect(() => {
         // Join room just in case it's a newly created one
         socket.emit('joinChat', selectedChat.idrazgovor);
 
-        const saveReceivedMessage = (msg: IMessage) => {
+        const saveReceivedMessage = async (msg: IMessage) => {
             // Check if this is a message for selectedChat
-            if (msg.idChat === selectedChat.idrazgovor)
+            if (msg.idChat === selectedChat.idrazgovor) {
                 setMessages(oldMessages => [...oldMessages, msg]);
+            }
         };
         socket.on('message', saveReceivedMessage);
 
         return () => {
             socket.off('message', saveReceivedMessage); // makni samo ovaj listener na message, a ne i sve
         };
-    }, [user, setMessages, selectedChat]);
+    }, [user, selectedChat]);
 
     // Scroll to new message
     React.useEffect(() => {
@@ -222,6 +225,22 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         console.log("Scrolling to new message");
     }, [messages, selectedChat]);
+
+    // Set last message
+    React.useEffect(() => {
+        if (messages.length === 0) return;
+        (async () => {
+            // Postavi da je to lastReadMessage na incomin message dok je taj chat window otvoren
+            try {
+                const lastMessage = messages[messages.length - 1];
+                await Poster('/api/last_read_message/', { arg: { idChat: lastMessage.idChat, idPoruka: lastMessage.idMsg } })
+            } catch(err) {
+                console.error(err);
+            }
+            // Remove all notifications (all messages are read)
+            readAllInChat(messages[0].idChat);
+        })();
+    }, [messages, readAllInChat]);
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -231,6 +250,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         reset();
         socket.emit('message', {
             idChat: selectedChat.idrazgovor,
+            idMsg: -1, // later set to real id in socketServer
             tekst: data.message,
             posiljatelj: user,
             timestamp: new Date().toLocaleString(),

@@ -74,7 +74,7 @@ const ChatAppLayout: React.FC<Props> = ({ children, user, fullscreen }) => {
         return (
             <main>
                 <Stack direction='row' sx={{ maxHeight: '100vh' }}>
-                    <Box flexGrow={0} overflow='auto'>
+                    <Box flexGrow={0}>
                         <LeftAppBar />
                     </Box>
                     <Box flexGrow={1}>
