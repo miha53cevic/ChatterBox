@@ -1,6 +1,6 @@
 import express from 'express';
 import http from 'http';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import { PrismaClient, korisnik } from '@prisma/client';
 import * as dotenv from 'dotenv';
@@ -13,11 +13,17 @@ console.log(process.env.NODE_ENV === 'production' ? 'Running prod' : 'Running de
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-interface IMessage {
+export interface IMessage {
     idChat: number,
+    idMsg: number,
     tekst: string,
     posiljatelj: korisnik,
     timestamp: string,
+};
+
+export interface INotification {
+    idChat: number,
+    unreadCount: number,
 };
 
 export type IUserStatus = 'online' | 'away' | 'offline';
@@ -34,6 +40,7 @@ interface ClientToServerEvents {
 interface ServerToClientEvents {
     message: (msg: IMessage) => void,
     connectedUsers: (connectedUsers: any[]) => void,
+    notifications: (notifications: INotification[]) => void,
 };
 
 interface InterServerEvents {
@@ -93,6 +100,59 @@ io.use(async (socket, next) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
+const getUnreadNotifications = async (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
+    const notifications: INotification[] = [];
+    try {
+        const chats = await prisma.razgovor.findMany({
+            where: {
+                pripadarazgovoru: {
+                    some: {
+                        idkorisnik: socket.data.user!.idkorisnik,
+                    }
+                }
+            },
+            select: {
+                idrazgovor: true,
+                pripadarazgovoru: {
+                    where: {
+                        idkorisnik: socket.data.user!.idkorisnik,
+                    },
+                    select: {
+                        poruka: {
+                            select: {
+                                idporuka: true,
+                            }
+                        },
+                    }
+                }
+            }
+        });
+        for (const { idrazgovor, pripadarazgovoru } of chats) {
+            const idLastMessage = pripadarazgovoru[0].poruka?.idporuka;
+            const unreadCount = await prisma.poruka.count({
+                where: {
+                    idrazgovor: idrazgovor,
+                    idporuka: {
+                        gt: idLastMessage, // Sve poruke nakon zadnje sigurno imaju veci id
+                    }
+                },
+            });
+            if (unreadCount > 0) {
+                notifications.push({
+                    idChat: idrazgovor,
+                    unreadCount: unreadCount,
+                });
+            }
+        }
+    } catch(err) {
+        console.error(err);
+    }
+
+    return notifications;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 io.on('connection', async (socket) => {
     console.log(`Connected: ${socket.id}`);
     //(await io.fetchSockets()).map(i => i.id);
@@ -100,6 +160,10 @@ io.on('connection', async (socket) => {
     // Emit connected sockets for status
     const connectedUsers = Array.from(io.of('/').sockets.values()).map(sock => sock.data);
     io.emit("connectedUsers", connectedUsers); // send to everyone
+
+    // Send initial notifications from db, user keeps track afterwards
+    const notifications = await getUnreadNotifications(socket);
+    socket.emit('notifications', notifications);
 
     socket.on('disconnect', (reason) => {
         console.log(`User id: ${socket.id} disconnected with reason: ${reason}`);
@@ -112,8 +176,6 @@ io.on('connection', async (socket) => {
     });
 
     socket.on('message', async (msg) => {
-        io.in(`chat${msg.idChat}`).emit('message', msg);
-
         // Save chat message to db
         try {
             const newMsg = await prisma.poruka.create({
@@ -124,9 +186,12 @@ io.on('connection', async (socket) => {
                 },
             });
             console.log("DB_LOG: Saving new message to db: ", newMsg);
-        } catch(err) {
+            msg.idMsg = newMsg.idporuka;
+        } catch (err) {
             console.error(err);
         }
+
+        io.in(`chat${msg.idChat}`).emit('message', msg);
     });
 
     socket.on('away', () => {

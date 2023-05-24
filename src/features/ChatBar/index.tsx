@@ -8,8 +8,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import AddPhoto from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
+import EmojiIcon from '@mui/icons-material/SentimentSatisfiedAlt';
+import ShareIcon from '@mui/icons-material/Share';
 import { useForm } from "react-hook-form";
 import { korisnik } from '@prisma/client';
+import { mutate } from 'swr';
 
 import { ControlledOutlineTextfield } from "../../components/Controlled/ControlledTextfield";
 import LoadingButton from "../../components/LoadingButton";
@@ -19,12 +22,46 @@ import useColorTheme from '../../hooks/useColorTheme';
 import FriendListItem from '../FriendListItem';
 import { Deleter, Fetcher, Poster } from '../../lib/Fetcher';
 import useErrorAlert from '../../hooks/useErrorAlert';
-import { mutate } from 'swr';
+import DialogCustomForm from '../../components/Dialogs/CustomForm';
+import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage } from '../../types';
-import DialogCustomForm from '../../components/Dialogs/CustomForm';
-import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+interface MessageActions {
+
+}
+
+const emojis = ["😀", "😂", "🙃", "😢", "😫"];
+
+const MessageActions: React.FC<MessageActions> = () => {
+
+    const [openEmojiList, setOpenEmojiList] = React.useState(false);
+    const handleEmojiSelect = (emoji: string) => {
+        setOpenEmojiList(false);
+    };
+
+    return (
+        <Box>
+            {openEmojiList ?
+                <Box sx={{ backgroundColor: 'white', borderRadius: '1rem' }}>
+                    {emojis.map((e, i) => (
+                        <IconButton key={i} onClick={() => handleEmojiSelect(e)}>{e}</IconButton>
+                    ))}
+                </Box>
+                : null
+            }
+            <IconButton onClick={() => setOpenEmojiList(!openEmojiList)}>
+                <EmojiIcon />
+            </IconButton>
+            <IconButton>
+                <ShareIcon />
+            </IconButton>
+        </Box>
+    );
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -82,7 +119,7 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
 
         try {
             const res = await Poster('/api/group/addUsersToGroup', { arg: { idGroup: selectedChat.idrazgovor, idUsers: data.idSudionici } });
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             showError("Error on adding a new friend to group chat, try again later.");
         }
@@ -169,9 +206,10 @@ export interface AddChatFormData {
 
 export interface Props extends ChatBarHeaderProps {
     user: korisnik,
+    readAllInChat: (idChat: number) => void,
 };
 
-const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUsers }) => {
+const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUsers, readAllInChat }) => {
 
     const [messages, setMessages] = React.useState<IMessage[]>([]);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -188,6 +226,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                 const messages = await Fetcher<ApiGetForChatMessages>(`/api/messages/${selectedChat.idrazgovor}`);
                 const formatedMessages = messages.map(msg => ({
                     idChat: msg.idrazgovor,
+                    idMsg: msg.idporuka,
                     posiljatelj: msg.korisnik,
                     tekst: msg.tekst,
                     timestamp: new Date(msg.timestamp as unknown as string).toLocaleString(),
@@ -197,24 +236,25 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                 console.error(err);
             }
         })();
-    }, [selectedChat, setMessages]);
+    }, [selectedChat]);
 
     // subscribe to messages received & add new real time messages
     React.useEffect(() => {
         // Join room just in case it's a newly created one
         socket.emit('joinChat', selectedChat.idrazgovor);
 
-        const saveReceivedMessage = (msg: IMessage) => {
+        const saveReceivedMessage = async (msg: IMessage) => {
             // Check if this is a message for selectedChat
-            if (msg.idChat === selectedChat.idrazgovor)
+            if (msg.idChat === selectedChat.idrazgovor) {
                 setMessages(oldMessages => [...oldMessages, msg]);
+            }
         };
         socket.on('message', saveReceivedMessage);
 
         return () => {
             socket.off('message', saveReceivedMessage); // makni samo ovaj listener na message, a ne i sve
         };
-    }, [user, setMessages, selectedChat]);
+    }, [user, selectedChat]);
 
     // Scroll to new message
     React.useEffect(() => {
@@ -222,6 +262,22 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         console.log("Scrolling to new message");
     }, [messages, selectedChat]);
+
+    // Set last message
+    React.useEffect(() => {
+        if (messages.length === 0) return;
+        (async () => {
+            // Postavi da je to lastReadMessage na incomin message dok je taj chat window otvoren
+            try {
+                const lastMessage = messages[messages.length - 1];
+                await Poster('/api/last_read_message/', { arg: { idChat: lastMessage.idChat, idPoruka: lastMessage.idMsg } })
+            } catch (err) {
+                console.error(err);
+            }
+            // Remove all notifications (all messages are read)
+            readAllInChat(messages[0].idChat);
+        })();
+    }, [messages, readAllInChat]);
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -231,6 +287,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         reset();
         socket.emit('message', {
             idChat: selectedChat.idrazgovor,
+            idMsg: -1, // later set to real id in socketServer
             tekst: data.message,
             posiljatelj: user,
             timestamp: new Date().toLocaleString(),
@@ -246,29 +303,35 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             <Box flex='1' sx={{ padding: '2rem', overflowY: 'auto' }}>
                 {messages.map((msg, i) => (
                     <React.Fragment key={i}>
-                        <Paper sx={{
-                            padding: '1rem', width: 'fit-content', borderRadius: '1rem',
-                            backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
-                            ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
-                        }}
-                        >
-                            <Stack direction='row' spacing='1rem'>
-                                <AvatarImage url={msg.posiljatelj.avatarurl} width='64px' height='64px' />
-                                <Stack direction='column' sx={{ maxWidth: 'calc(100vw / 3)' }}>
-                                    <Typography variant='caption'>
-                                        {msg.timestamp}
-                                    </Typography>
-                                    <Typography variant='body1' fontWeight='bold' style={{ wordWrap: 'break-word' }}>
-                                        {msg.posiljatelj.korisnickoime}
-                                    </Typography>
-                                    <Stack direction='column' justifyContent='center' flex='1'>
-                                        <Typography variant='body2' style={{ wordWrap: 'break-word' }}>
-                                            {msg.tekst}
+                        <Stack direction='row' spacing='0.5rem' alignItems='center'>
+                            <Paper sx={{
+                                padding: '1rem', width: 'fit-content', borderRadius: '1rem',
+                                backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
+                                ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
+                            }}
+                            >
+                                <Stack direction='row' spacing='1rem'>
+                                    <AvatarImage url={msg.posiljatelj.avatarurl} width='64px' height='64px' />
+                                    <Stack direction='column' sx={{ maxWidth: 'calc(100vw / 3)' }}>
+                                        <Typography variant='caption'>
+                                            {msg.timestamp}
                                         </Typography>
+                                        <Typography variant='body1' fontWeight='bold' style={{ wordWrap: 'break-word' }}>
+                                            {msg.posiljatelj.korisnickoime}
+                                        </Typography>
+                                        <Stack direction='column' justifyContent='center' flex='1'>
+                                            <Typography variant='body2' style={{ wordWrap: 'break-word' }}>
+                                                {msg.tekst}
+                                            </Typography>
+                                        </Stack>
                                     </Stack>
                                 </Stack>
-                            </Stack>
-                        </Paper>
+                            </Paper>
+                            {msg.posiljatelj.idkorisnik !== user.idkorisnik ?
+                                <MessageActions />
+                                : null
+                            }
+                        </Stack>
                         <br />
                     </React.Fragment>
                 ))}

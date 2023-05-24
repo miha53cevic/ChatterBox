@@ -9,7 +9,7 @@ import ChatBar from "../../features/ChatBar";
 import socket from '../../lib/SocketIOClient';
 
 import { Chat } from '../../types/apiTypes';
-import { IConnectedUser, IMessage } from '../../types';
+import { IConnectedUser, IMessage, INotification } from '../../types';
 import useNotificationSound from '../../hooks/useNotificationSound';
 
 export const getServerSideProps = withSession(async ({ req }) => {
@@ -25,6 +25,7 @@ export const getServerSideProps = withSession(async ({ req }) => {
 const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({ user }) => {
 
     const [connectedUsers, setConnectedUsers] = React.useState<IConnectedUser[]>([]);
+    const [notifications, setNotifications] = React.useState<INotification[]>([]);
     const [selectedChat, setSelectedChat] = React.useState<Chat | null>(null);
 
     const { audio } = useNotificationSound();
@@ -34,6 +35,10 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         socket.on('connectedUsers', (connectedUsers: IConnectedUser[]) => {
             setConnectedUsers([...connectedUsers]);
         });
+        // Initial notifications from db on first connect then client takes over counting
+        socket.on('notifications', (notifications: INotification[]) => {
+            setNotifications(notifications);
+        });
 
         const notificationOnMessage = (msg: IMessage) => {
             if (!audio) return;
@@ -42,15 +47,31 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 audio.play().catch(err => {
                     console.error(err);
                 });
+
+                // Dodaj notification +1 za taj chat
+                const copy = [...notifications];
+                // check if notification exists already or just add to it
+                const existingNotification = copy.find(n => n.idChat === msg.idChat);
+                if (!existingNotification) {
+                    copy.push({ idChat: msg.idChat, unreadCount: 1 });
+                } else existingNotification.unreadCount++;
+                setNotifications(copy);
             }
         };
         socket.on('message', notificationOnMessage);
 
         return () => {
             socket.off('connectedUsers');
+            socket.off('notifications');
             socket.off('message', notificationOnMessage);
         };
-    }, [user, selectedChat, audio]);
+    }, [user, selectedChat, audio, notifications]);
+
+    const readAllInChat = (idChat: number) => {
+        let copy = [...notifications];
+        copy = copy.filter(n => n.idChat !== idChat);
+        setNotifications(copy);
+    };
 
     return (
         <main>
@@ -58,19 +79,19 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 <Stack direction='row' height='100%'>
                     <Box sx={{ overflowY: 'scroll' }}>
                         <Paper sx={{ padding: '2rem', minHeight: '100%' }}>
-                            <ChatList user={user} selectChat={setSelectedChat} connectedUsers={connectedUsers} />
+                            <ChatList user={user} selectChat={setSelectedChat} connectedUsers={connectedUsers} notifications={notifications} />
                         </Paper>
                     </Box>
                     <Box flex='1'>
                         {selectedChat ?
-                            <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} connectedUsers={connectedUsers} />
+                            <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} connectedUsers={connectedUsers} readAllInChat={readAllInChat} />
                             : null
                         }
                     </Box>
                 </Stack>
             </ChatAppLayout>
         </main>
-    );    
+    );
 };
 
 export default Chat;
