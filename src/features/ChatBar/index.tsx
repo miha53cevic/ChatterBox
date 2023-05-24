@@ -8,6 +8,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import AddPhoto from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
+import EmojiIcon from '@mui/icons-material/SentimentSatisfiedAlt';
+import ShareIcon from '@mui/icons-material/Share';
 import { useForm } from "react-hook-form";
 import { korisnik } from '@prisma/client';
 import { mutate } from 'swr';
@@ -25,6 +27,41 @@ import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage } from '../../types';
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+interface MessageActions {
+
+}
+
+const emojis = ["😀", "😂", "🙃", "😢", "😫"];
+
+const MessageActions: React.FC<MessageActions> = () => {
+
+    const [openEmojiList, setOpenEmojiList] = React.useState(false);
+    const handleEmojiSelect = (emoji: string) => {
+        setOpenEmojiList(false);
+    };
+
+    return (
+        <Box>
+            {openEmojiList ?
+                <Box sx={{ backgroundColor: 'white', borderRadius: '1rem' }}>
+                    {emojis.map((e, i) => (
+                        <IconButton key={i} onClick={() => handleEmojiSelect(e)}>{e}</IconButton>
+                    ))}
+                </Box>
+                : null
+            }
+            <IconButton onClick={() => setOpenEmojiList(!openEmojiList)}>
+                <EmojiIcon />
+            </IconButton>
+            <IconButton>
+                <ShareIcon />
+            </IconButton>
+        </Box>
+    );
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -82,7 +119,7 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
 
         try {
             const res = await Poster('/api/group/addUsersToGroup', { arg: { idGroup: selectedChat.idrazgovor, idUsers: data.idSudionici } });
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             showError("Error on adding a new friend to group chat, try again later.");
         }
@@ -234,7 +271,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             try {
                 const lastMessage = messages[messages.length - 1];
                 await Poster('/api/last_read_message/', { arg: { idChat: lastMessage.idChat, idPoruka: lastMessage.idMsg } })
-            } catch(err) {
+            } catch (err) {
                 console.error(err);
             }
             // Remove all notifications (all messages are read)
@@ -266,29 +303,35 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             <Box flex='1' sx={{ padding: '2rem', overflowY: 'auto' }}>
                 {messages.map((msg, i) => (
                     <React.Fragment key={i}>
-                        <Paper sx={{
-                            padding: '1rem', width: 'fit-content', borderRadius: '1rem',
-                            backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
-                            ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
-                        }}
-                        >
-                            <Stack direction='row' spacing='1rem'>
-                                <AvatarImage url={msg.posiljatelj.avatarurl} width='64px' height='64px' />
-                                <Stack direction='column' sx={{ maxWidth: 'calc(100vw / 3)' }}>
-                                    <Typography variant='caption'>
-                                        {msg.timestamp}
-                                    </Typography>
-                                    <Typography variant='body1' fontWeight='bold' style={{ wordWrap: 'break-word' }}>
-                                        {msg.posiljatelj.korisnickoime}
-                                    </Typography>
-                                    <Stack direction='column' justifyContent='center' flex='1'>
-                                        <Typography variant='body2' style={{ wordWrap: 'break-word' }}>
-                                            {msg.tekst}
+                        <Stack direction='row' spacing='0.5rem' alignItems='center'>
+                            <Paper sx={{
+                                padding: '1rem', width: 'fit-content', borderRadius: '1rem',
+                                backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
+                                ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
+                            }}
+                            >
+                                <Stack direction='row' spacing='1rem'>
+                                    <AvatarImage url={msg.posiljatelj.avatarurl} width='64px' height='64px' />
+                                    <Stack direction='column' sx={{ maxWidth: 'calc(100vw / 3)' }}>
+                                        <Typography variant='caption'>
+                                            {msg.timestamp}
                                         </Typography>
+                                        <Typography variant='body1' fontWeight='bold' style={{ wordWrap: 'break-word' }}>
+                                            {msg.posiljatelj.korisnickoime}
+                                        </Typography>
+                                        <Stack direction='column' justifyContent='center' flex='1'>
+                                            <Typography variant='body2' style={{ wordWrap: 'break-word' }}>
+                                                {msg.tekst}
+                                            </Typography>
+                                        </Stack>
                                     </Stack>
                                 </Stack>
-                            </Stack>
-                        </Paper>
+                            </Paper>
+                            {msg.posiljatelj.idkorisnik !== user.idkorisnik ?
+                                <MessageActions />
+                                : null
+                            }
+                        </Stack>
                         <br />
                     </React.Fragment>
                 ))}
