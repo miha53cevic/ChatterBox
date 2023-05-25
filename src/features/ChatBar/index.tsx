@@ -11,6 +11,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EmojiIcon from '@mui/icons-material/SentimentSatisfiedAlt';
 import ShareIcon from '@mui/icons-material/Share';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useForm } from "react-hook-form";
 import { korisnik, reakcijanaporuku } from '@prisma/client';
 import { mutate } from 'swr';
@@ -378,9 +379,44 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         } as IMessage);
     };
 
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    const fileDropAreaRef = React.useRef<HTMLDivElement>(null);
+
+    const handleFileDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
+        e.preventDefault();
+        if (!fileDropAreaRef.current) return;
+
+        fileDropAreaRef.current.style.display = 'none';
+
+        const fileList = e.dataTransfer.files;
+        for (let i = 0; i < fileList.length; i++) {
+            console.log(fileList.item(i));
+        }
+
+        // Upload file TODO
+    };
+
+    const handleOnFileDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
+        e.preventDefault(); // prevent file open behaviour
+        if (!fileDropAreaRef.current) return;
+        fileDropAreaRef.current.style.display = 'block';
+    };
+
+    const handleOnFileDragLeave: React.DragEventHandler<HTMLDivElement> = (e) => {
+        e.preventDefault();
+        if (!fileDropAreaRef.current) return;
+        fileDropAreaRef.current.style.display = 'none';
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
     const theme = useColorTheme().getTheme();
     return (
-        <Stack direction='column' height='100%' maxHeight='100vh'>
+        <Stack direction='column' height='100%' maxHeight='100vh' position='relative' onDrop={handleFileDrop} onDragOver={handleOnFileDragOver} onDragLeave={handleOnFileDragLeave}>
+            <div ref={fileDropAreaRef} id='fileDropArea' style={{ display: 'none', position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }}>
+                <CloudUploadIcon sx={{ fontSize: '20rem', transform: 'translate(-50%, -50%)', top: '50%', left: '50%', position: 'absolute' }} />
+            </div>
             <Paper sx={{ px: '2rem' }}>
                 <ChatBarHeader selectedChat={selectedChat} closeChat={closeChat} connectedUsers={connectedUsers} />
             </Paper>
@@ -389,7 +425,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                     <React.Fragment key={i}>
                         <Stack direction='row' spacing='0.5rem' alignItems='center'>
                             <Paper sx={{
-                                padding: '1rem', width: 'fit-content', borderRadius: '1rem', position: 'relative',
+                                padding: '1rem', width: 'fit-content', borderRadius: '1rem', position: 'relative', // relative radi reactions
                                 backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
                                 ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
                             }}
