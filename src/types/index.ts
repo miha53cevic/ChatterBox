@@ -20,3 +20,7 @@ export interface INotification {
     idChat: number,
     unreadCount: number,
 };
+
+export interface IReaction extends reakcijanaporuku {
+    idChat: number,
+};

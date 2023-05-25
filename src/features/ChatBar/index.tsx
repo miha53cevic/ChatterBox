@@ -26,7 +26,7 @@ import DialogCustomForm from '../../components/Dialogs/CustomForm';
 import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
-import { IConnectedUser, IMessage } from '../../types';
+import { IConnectedUser, IMessage, IReaction } from '../../types';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -42,7 +42,7 @@ const MessageReactions: React.FC<MessageReactionsProps> = ({ reactions }) => {
         else reactionsMap.set(reaction.emoticon, 1);
     }
     return (
-        <Paper elevation={5} sx={{ display: 'flex', flexDirection: 'row', width: 'fit-content' }}>
+        <Paper elevation={5} sx={{ position: 'absolute', display: 'flex', bottom: '-1.25rem', right: 0 }}>
             {Array.from(reactionsMap.keys()).map((key, i) => (
                 <Stack direction='row' key={i}>
                     <Typography>{key}</Typography>
@@ -57,11 +57,12 @@ const MessageReactions: React.FC<MessageReactionsProps> = ({ reactions }) => {
 
 interface MessageActionsProps {
     idPoruka: number,
+    idChat: number,
 }
 
 const emojis = ["😀", "😂", "🙃", "😢", "😫"];
 
-const MessageActions: React.FC<MessageActionsProps> = ({ idPoruka }) => {
+const MessageActions: React.FC<MessageActionsProps> = ({ idPoruka, idChat }) => {
 
     const showError = useErrorAlert();
 
@@ -70,6 +71,8 @@ const MessageActions: React.FC<MessageActionsProps> = ({ idPoruka }) => {
         setOpenEmojiList(false);
         try {
             const reaction = await Poster('/api/reactions', { arg: { emoji: emoji, idPoruka: idPoruka } });
+            // Notify other users about the reaction
+            socket.emit('reaction', { idChat: idChat, ...reaction });
         } catch(err) {
             showError('Could not add reaction!');
         }
@@ -312,6 +315,22 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         })();
     }, [messages, readAllInChat]);
 
+    // Get real time reaction
+    React.useEffect(() => {
+        socket.on('reaction', (reaction: IReaction) => {
+            // Find the chat and add the reaction to it
+            setMessages(curMessages => {
+                const msg = curMessages.find(m => m.idMsg === reaction.idporuka);
+                if (!msg) return curMessages;
+                msg.reactions.push(reaction);
+                return structuredClone(curMessages);
+            });
+        });
+        return () => {
+            socket.off('reaction');
+        };
+    }, []);
+
     ////////////////////////////////////////////////////////////////////////////////////////
 
     // On message send
@@ -339,7 +358,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                     <React.Fragment key={i}>
                         <Stack direction='row' spacing='0.5rem' alignItems='center'>
                             <Paper sx={{
-                                padding: '1rem', width: 'fit-content', borderRadius: '1rem',
+                                padding: '1rem', width: 'fit-content', borderRadius: '1rem', position: 'relative',
                                 backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
                                 ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
                             }}
@@ -363,7 +382,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                                 <MessageReactions reactions={msg.reactions} />
                             </Paper>
                             {msg.posiljatelj.idkorisnik !== user.idkorisnik ?
-                                <MessageActions idPoruka={msg.idMsg} />
+                                <MessageActions idPoruka={msg.idMsg} idChat={selectedChat.idrazgovor} />
                                 : null
                             }
                         </Stack>
