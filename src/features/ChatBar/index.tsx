@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, IconButton, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, IconButton, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import AddPersonIcon from '@mui/icons-material/PersonAddAlt1';
@@ -10,6 +10,7 @@ import AddPhoto from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EmojiIcon from '@mui/icons-material/SentimentSatisfiedAlt';
 import ShareIcon from '@mui/icons-material/Share';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useForm } from "react-hook-form";
 import { korisnik, reakcijanaporuku } from '@prisma/client';
 import { mutate } from 'swr';
@@ -24,6 +25,7 @@ import { Deleter, Fetcher, Poster } from '../../lib/Fetcher';
 import useErrorAlert from '../../hooks/useErrorAlert';
 import DialogCustomForm from '../../components/Dialogs/CustomForm';
 import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
+import useDesktop from '../../hooks/useDesktop';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage, IReaction } from '../../types';
@@ -73,7 +75,7 @@ const MessageActions: React.FC<MessageActionsProps> = ({ idPoruka, idChat }) => 
             const reaction = await Poster('/api/reactions', { arg: { emoji: emoji, idPoruka: idPoruka } });
             // Notify other users about the reaction
             socket.emit('reaction', { idChat: idChat, ...reaction });
-        } catch(err) {
+        } catch (err) {
             showError('Could not add reaction!');
         }
     };
@@ -159,8 +161,22 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
             showError("Error on adding a new friend to group chat, try again later.");
         }
     };
+    const handleAddGroupPhoto = async () => {
+        const idChat = selectedChat.idrazgovor;
+    };
+    // Menu for group options
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const openMenu = Boolean(anchorEl);
+    const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
     ///////////////////////////////////////////////////////////////////////////////////////
 
+    const desktop = useDesktop();
     if (selectedChat.grupa) {
         return (
             <>
@@ -179,7 +195,7 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
                 <Box sx={{ my: '1rem', mr: 2 }}>
                     <Stack direction='row' sx={{ my: '1rem', mr: 2, width: '100%' }} spacing='1rem'>
                         <AvatarImage url={selectedChat.avatarurl} />
-                        <Stack direction='row' flex='1' alignSelf='center' spacing='1rem'>
+                        <Stack direction='row' flex='1' alignSelf='center' alignItems='center' spacing='1rem'>
                             {editGroupName ?
                                 <>
                                     <TextField variant='standard' defaultValue={displayGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
@@ -193,24 +209,39 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
                                 :
                                 <>
                                     <Typography variant='h4'>{displayGroupName}</Typography>
-                                    <IconButton onClick={() => setEditGroupName(true)}>
-                                        <EditIcon />
-                                    </IconButton>
+                                    <Box>
+                                        <IconButton onClick={() => setEditGroupName(true)}>
+                                            <EditIcon />
+                                        </IconButton>
+                                    </Box>
                                 </>
                             }
                         </Stack>
-                        <Stack direction='row' alignItems='center' spacing='1rem'>
-                            <IconButton onClick={() => setOpenDialog(true)}>
-                                <AddPersonIcon fontSize="large" />
-                            </IconButton>
-                            <IconButton>
-                                <AddPhoto fontSize='large' />
-                            </IconButton>
-                            <IconButton onClick={handleGroupLeave}>
-                                <LeaveGroupIcon fontSize='large' />
-                            </IconButton>
+                        <Stack direction='row' alignItems='center' spacing='0.5rem'>
+                            <Box>
+                                <IconButton onClick={handleMenuClick}>
+                                    <MoreVertIcon fontSize={desktop ? 'large' : 'medium'} />
+                                </IconButton>
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={openMenu}
+                                    onClose={handleMenuClose}
+                                >
+                                    <MenuItem onClick={handleMenuClose}>
+                                        <IconButton onClick={() => setOpenDialog(true)}>
+                                            <AddPersonIcon fontSize="large" />
+                                        </IconButton>
+                                        <IconButton onClick={handleAddGroupPhoto}>
+                                            <AddPhoto fontSize='large' />
+                                        </IconButton>
+                                        <IconButton onClick={handleGroupLeave}>
+                                            <LeaveGroupIcon fontSize='large' />
+                                        </IconButton>
+                                    </MenuItem>
+                                </Menu>
+                            </Box>
                             <IconButton onClick={closeChat}>
-                                <CloseIcon fontSize="large" />
+                                <CloseIcon fontSize={desktop ? 'large' : 'medium'} />
                             </IconButton>
                         </Stack>
                     </Stack>

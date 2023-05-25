@@ -7,10 +7,11 @@ import ChatAppLayout from "../../layouts/ChatAppLayout";
 import ChatList from "../../features/ChatList";
 import ChatBar from "../../features/ChatBar";
 import socket from '../../lib/SocketIOClient';
+import useNotificationSound from '../../hooks/useNotificationSound';
+import useDesktop from '../../hooks/useDesktop';
 
 import { Chat } from '../../types/apiTypes';
 import { IConnectedUser, IMessage, INotification } from '../../types';
-import useNotificationSound from '../../hooks/useNotificationSound';
 
 export const getServerSideProps = withSession(async ({ req }) => {
     const user = req.session.korisnik;
@@ -72,7 +73,8 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         setNotifications(old => old.filter(n => n.idChat !== idChat));
     }, [setNotifications]);
 
-    return (
+    const desktop = useDesktop();
+    if (desktop) return (
         <main>
             <ChatAppLayout user={user} fullscreen>
                 <Stack direction='row' height='100%'>
@@ -87,6 +89,25 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                             : null
                         }
                     </Box>
+                </Stack>
+            </ChatAppLayout>
+        </main>
+    );
+    else return (
+        <main>
+            <ChatAppLayout user={user}>
+                <Stack direction='row' height='100%'>
+                    {!selectedChat ?
+                        <Box sx={{ overflowY: 'scroll' }} flex='1'>
+                            <Paper sx={{ padding: '1rem', minHeight: '100%' }}>
+                                <ChatList user={user} selectChat={setSelectedChat} connectedUsers={connectedUsers} notifications={notifications} />
+                            </Paper>
+                        </Box>
+                        :
+                        <Box flex='1'>
+                            <ChatBar user={user} selectedChat={selectedChat} closeChat={() => setSelectedChat(null)} connectedUsers={connectedUsers} readAllInChat={readAllInChat} />
+                        </Box>
+                    }
                 </Stack>
             </ChatAppLayout>
         </main>
