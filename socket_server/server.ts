@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
-import { PrismaClient, korisnik } from '@prisma/client';
+import { PrismaClient, korisnik, reakcijanaporuku } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({
@@ -19,6 +19,7 @@ export interface IMessage {
     tekst: string,
     posiljatelj: korisnik,
     timestamp: string,
+    reactions: reakcijanaporuku[],
 };
 
 export interface INotification {

@@ -11,7 +11,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EmojiIcon from '@mui/icons-material/SentimentSatisfiedAlt';
 import ShareIcon from '@mui/icons-material/Share';
 import { useForm } from "react-hook-form";
-import { korisnik } from '@prisma/client';
+import { korisnik, reakcijanaporuku } from '@prisma/client';
 import { mutate } from 'swr';
 
 import { ControlledOutlineTextfield } from "../../components/Controlled/ControlledTextfield";
@@ -30,17 +30,49 @@ import { IConnectedUser, IMessage } from '../../types';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-interface MessageActions {
+interface MessageReactionsProps {
+    reactions: reakcijanaporuku[],
+}
 
+const MessageReactions: React.FC<MessageReactionsProps> = ({ reactions }) => {
+    const reactionsMap = new Map<string, number>();
+    for (const reaction of reactions) {
+        if (reactionsMap.has(reaction.emoticon))
+            reactionsMap.set(reaction.emoticon, reactionsMap.get(reaction.emoticon)! + 1);
+        else reactionsMap.set(reaction.emoticon, 1);
+    }
+    return (
+        <Paper elevation={5} sx={{ display: 'flex', flexDirection: 'row', width: 'fit-content' }}>
+            {Array.from(reactionsMap.keys()).map((key, i) => (
+                <Stack direction='row' key={i}>
+                    <Typography>{key}</Typography>
+                    <Typography>{reactionsMap.get(key)}</Typography>
+                </Stack>
+            ))}
+        </Paper>
+    );
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+interface MessageActionsProps {
+    idPoruka: number,
 }
 
 const emojis = ["😀", "😂", "🙃", "😢", "😫"];
 
-const MessageActions: React.FC<MessageActions> = () => {
+const MessageActions: React.FC<MessageActionsProps> = ({ idPoruka }) => {
+
+    const showError = useErrorAlert();
 
     const [openEmojiList, setOpenEmojiList] = React.useState(false);
-    const handleEmojiSelect = (emoji: string) => {
+    const handleEmojiSelect = async (emoji: string) => {
         setOpenEmojiList(false);
+        try {
+            const reaction = await Poster('/api/reactions', { arg: { emoji: emoji, idPoruka: idPoruka } });
+        } catch(err) {
+            showError('Could not add reaction!');
+        }
     };
 
     return (
@@ -230,6 +262,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                     posiljatelj: msg.korisnik,
                     tekst: msg.tekst,
                     timestamp: new Date(msg.timestamp as unknown as string).toLocaleString(),
+                    reactions: msg.reakcijanaporuku,
                 } as IMessage));
                 setMessages([...formatedMessages]);
             } catch (err) {
@@ -291,6 +324,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             tekst: data.message,
             posiljatelj: user,
             timestamp: new Date().toLocaleString(),
+            reactions: [], // inicijalno nema reakcija, i to se koristi samo dok se dohvate poruke iz db orginalno
         } as IMessage);
     };
 
@@ -326,9 +360,10 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                                         </Stack>
                                     </Stack>
                                 </Stack>
+                                <MessageReactions reactions={msg.reactions} />
                             </Paper>
                             {msg.posiljatelj.idkorisnik !== user.idkorisnik ?
-                                <MessageActions />
+                                <MessageActions idPoruka={msg.idMsg} />
                                 : null
                             }
                         </Stack>

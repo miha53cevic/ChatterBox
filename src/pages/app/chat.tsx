@@ -67,11 +67,10 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         };
     }, [user, selectedChat, audio, notifications]);
 
-    const readAllInChat = (idChat: number) => {
-        let copy = [...notifications];
-        copy = copy.filter(n => n.idChat !== idChat);
-        setNotifications(copy);
-    };
+    // ako nije useCallback funkcija se rekreira svaki put dok se salje ChatList di je onda infinite loop
+    const readAllInChat = React.useCallback((idChat: number) => {
+        setNotifications(old => old.filter(n => n.idChat !== idChat));
+    }, [setNotifications]);
 
     return (
         <main>
