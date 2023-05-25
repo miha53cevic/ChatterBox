@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
-import { PrismaClient, korisnik } from '@prisma/client';
+import { PrismaClient, korisnik, reakcijanaporuku } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({
@@ -19,11 +19,16 @@ export interface IMessage {
     tekst: string,
     posiljatelj: korisnik,
     timestamp: string,
+    reactions: reakcijanaporuku[],
 };
 
 export interface INotification {
     idChat: number,
     unreadCount: number,
+};
+
+export interface IReaction extends reakcijanaporuku {
+    idChat: number,
 };
 
 export type IUserStatus = 'online' | 'away' | 'offline';
@@ -35,12 +40,14 @@ interface ClientToServerEvents {
     message: (msg: IMessage) => void,
     away: () => void,
     active: () => void,
+    reaction: (reaction: IReaction) => void,
 };
 
 interface ServerToClientEvents {
     message: (msg: IMessage) => void,
     connectedUsers: (connectedUsers: any[]) => void,
     notifications: (notifications: INotification[]) => void,
+    reaction: (reaction: IReaction) => void,
 };
 
 interface InterServerEvents {
@@ -204,6 +211,10 @@ io.on('connection', async (socket) => {
         io.of('/').sockets.get(socket.id)!.data.status = 'online';
         const connectedUsers = Array.from(io.of('/').sockets.values()).map(sock => sock.data);
         io.emit("connectedUsers", connectedUsers);
+    });
+    
+    socket.on('reaction', (reaction) => {
+        io.in(`chat${reaction.idChat}`).emit('reaction', reaction);
     });
 
     socket.onAny((event, ...args) => {

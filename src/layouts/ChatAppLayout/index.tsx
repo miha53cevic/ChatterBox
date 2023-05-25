@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Box, Stack } from "@mui/material";
 import { korisnik } from "@prisma/client";
+import { useIdleTimer } from "react-idle-timer";
 
 import { themes } from "../../Theme";
 import LeftAppBar from "../LeftAppBar";
@@ -8,7 +9,6 @@ import BottomAppBar from "../BottomAppBar";
 import useDesktop from "../../hooks/useDesktop";
 import useColorTheme from "../../hooks/useColorTheme";
 import socket from "../../lib/SocketIOClient";
-import { useIdleTimer } from "react-idle-timer";
 
 export interface Props {
     children: React.ReactNode,
@@ -100,10 +100,10 @@ const ChatAppLayout: React.FC<Props> = ({ children, user, fullscreen }) => {
     }
     else return (
         <main>
-            <Stack direction='column' sx={{ minHeight: '100vh' }}>
-                <Box flexGrow={1}>
+            <Stack direction='column' sx={{ maxHeight: '100vh', height: '100vh' }}>
+                <Stack direction='column' flexGrow={1} sx={{ overflowY: 'auto' }}>
                     {children}
-                </Box>
+                </Stack>
                 <Box flexGrow={0}>
                     <BottomAppBar />
                 </Box>

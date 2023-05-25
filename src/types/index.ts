@@ -1,4 +1,4 @@
-import { korisnik } from "@prisma/client";
+import { korisnik, reakcijanaporuku } from "@prisma/client";
 
 export interface IMessage {
     idChat: number,
@@ -6,6 +6,7 @@ export interface IMessage {
     tekst: string,
     posiljatelj: korisnik,
     timestamp: string,
+    reactions: reakcijanaporuku[],
 };
 
 export type IUserStatus = 'online' | 'away' | 'offline';
@@ -18,4 +19,8 @@ export interface IConnectedUser {
 export interface INotification {
     idChat: number,
     unreadCount: number,
+};
+
+export interface IReaction extends reakcijanaporuku {
+    idChat: number,
 };

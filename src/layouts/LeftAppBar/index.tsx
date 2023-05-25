@@ -1,7 +1,6 @@
 import { AppBar, Toolbar, Box, Stack, IconButton } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import HomeIcon from '@mui/icons-material/Home';
-import StarIcon from '@mui/icons-material/Star';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FriendsIcon from '@mui/icons-material/People';
