@@ -1,12 +1,12 @@
 import * as React from 'react';
-import { Box, IconButton, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, IconButton, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import AddPersonIcon from '@mui/icons-material/PersonAddAlt1';
 import LeaveGroupIcon from '@mui/icons-material/ExitToApp';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
-import AddPhoto from '@mui/icons-material/AddPhotoAlternate';
+import AddPhotoIcon from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EmojiIcon from '@mui/icons-material/SentimentSatisfiedAlt';
 import ShareIcon from '@mui/icons-material/Share';
@@ -27,6 +27,7 @@ import useErrorAlert from '../../hooks/useErrorAlert';
 import DialogCustomForm from '../../components/Dialogs/CustomForm';
 import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 import useDesktop from '../../hooks/useDesktop';
+import { S3Upload } from '../../lib/S3Bucket';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage, IReaction } from '../../types';
@@ -162,8 +163,22 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
             showError("Error on adding a new friend to group chat, try again later.");
         }
     };
-    const handleAddGroupPhoto = async () => {
+    const handleAddGroupPhoto: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+        if (!e.target.files) return;
+
+        const file = e.target.files[0];
+        const ext = e.target.files[0].type.split('/')[1];
+
         const idChat = selectedChat.idrazgovor;
+        try {
+            const response = await S3Upload(`groupAvatar_${idChat}.${ext}`, file);
+            const res = await Poster('/api/group/changeAvatar', { arg: { idGroup: idChat, avatarurl: `${process.env.NEXT_PUBLIC_S3_BUCKET_URL}/groupAvatar_${idChat}.${ext}` } })
+            mutate('/api/chats'); // update chat list
+            selectedChat.avatarurl = `${process.env.NEXT_PUBLIC_S3_BUCKET_URL}/groupAvatar_${idChat}.${ext}`;
+        } catch (err) {
+            showError("Error changing group avatar, try again later");
+        }
+        handleMenuClose();
     };
     // Menu for group options
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -199,7 +214,7 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
                         <Stack direction='row' flex='1' alignSelf='center' alignItems='center' spacing='1rem'>
                             {editGroupName ?
                                 <>
-                                    <TextField variant='standard' defaultValue={displayGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
+                                    <TextField variant='standard' defaultValue={displayGroupName} onChange={(e) => setNewGroupName(e.target.value)} fullWidth />
                                     <IconButton onClick={() => handleGroupNameChange()}>
                                         <CheckIcon />
                                     </IconButton>
@@ -228,16 +243,29 @@ const ChatBarHeader: React.FC<ChatBarHeaderProps> = ({ selectedChat, closeChat, 
                                     open={openMenu}
                                     onClose={handleMenuClose}
                                 >
-                                    <MenuItem onClick={handleMenuClose}>
-                                        <IconButton onClick={() => setOpenDialog(true)}>
-                                            <AddPersonIcon fontSize="large" />
-                                        </IconButton>
-                                        <IconButton onClick={handleAddGroupPhoto}>
-                                            <AddPhoto fontSize='large' />
-                                        </IconButton>
-                                        <IconButton onClick={handleGroupLeave}>
-                                            <LeaveGroupIcon fontSize='large' />
-                                        </IconButton>
+                                    <MenuItem onClick={() => { setOpenDialog(true); handleMenuClose(); }}>
+                                        <AddPersonIcon sx={{ mr: '1rem' }} fontSize="large" />
+                                        <Typography>
+                                            Add to group
+                                        </Typography>
+                                    </MenuItem>
+                                    <MenuItem component='label'>
+                                        <AddPhotoIcon sx={{ mr: '1rem' }} fontSize="large" />
+                                        <Typography>
+                                            Change avatar
+                                            <input
+                                                type='file'
+                                                accept="image/*"
+                                                onChange={handleAddGroupPhoto}
+                                                hidden
+                                            />
+                                        </Typography>
+                                    </MenuItem>
+                                    <MenuItem onClick={() => { handleGroupLeave(); handleMenuClose(); }}>
+                                        <LeaveGroupIcon sx={{ mr: '1rem' }} fontSize='large' />
+                                        <Typography>
+                                            Leave group
+                                        </Typography>
                                     </MenuItem>
                                 </Menu>
                             </Box>
@@ -414,7 +442,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     const theme = useColorTheme().getTheme();
     return (
         <Stack direction='column' height='100%' maxHeight='100vh' position='relative' onDrop={handleFileDrop} onDragOver={handleOnFileDragOver} onDragLeave={handleOnFileDragLeave}>
-            <div ref={fileDropAreaRef} id='fileDropArea' style={{ display: 'none', position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }}>
+            <div ref={fileDropAreaRef} id='fileDropArea' style={{ display: 'none', position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 999 }}>
                 <CloudUploadIcon sx={{ fontSize: '20rem', transform: 'translate(-50%, -50%)', top: '50%', left: '50%', position: 'absolute' }} />
             </div>
             <Paper sx={{ px: '2rem' }}>
