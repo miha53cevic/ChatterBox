@@ -2,6 +2,7 @@ import { ChangeEventHandler, useState } from "react";
 import { Avatar, Grid, Paper, Stack, Button, Typography, Container, Box } from "@mui/material";
 import { InferGetServerSidePropsType } from "next";
 import { useForm } from "react-hook-form";
+import Router from "next/router";
 
 import ChatAppLayout from "../../layouts/ChatAppLayout";
 import ChooseThemeColors, { CurrentThemeColorIcon } from "../../features/ChooseThemeColors";
@@ -48,9 +49,9 @@ const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>>
         const ext = e.target.files[0].type.split('/')[1];
 
         try {
-            const response = await S3Upload(`avatar_${user.idkorisnik}.${ext}`, true, file);
-            console.log(response);
-
+            const response = await S3Upload(`avatar_${user.idkorisnik}.${ext}`, file);
+            const res = await Poster('/api/change_avatar', { arg: { newAvatarUrl: `${process.env.NEXT_PUBLIC_S3_BUCKET_URL}/avatar_${user.idkorisnik}.${ext}` } });
+            Router.reload();
         } catch(err) {
             showError(`There was an error with uploading new avatar`);
             console.error(err);
@@ -78,7 +79,7 @@ const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>>
                         <Grid container spacing='4rem'>
                             <Grid item xs={12} md={6}>
                                 <Stack direction='column' alignItems='center' spacing='1rem'>
-                                    <Avatar sx={{ width: '96px', height: '96px' }} />
+                                    <Avatar sx={{ width: '96px', height: '96px' }} src={user.avatarurl} />
                                     <Button variant='contained' component='label'>
                                         Change avatar
                                         <input
