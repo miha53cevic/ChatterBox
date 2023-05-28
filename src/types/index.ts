@@ -7,7 +7,7 @@ export interface IMessage {
     posiljatelj: korisnik,
     timestamp: string,
     reactions: reakcijanaporuku[],
-    attachments: multimedijalnizapis[],
+    attachments: string[], // string url-ova
 };
 
 export type IUserStatus = 'online' | 'away' | 'offline';

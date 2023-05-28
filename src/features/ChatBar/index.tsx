@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, Button, IconButton, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, IconButton, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import AddPersonIcon from '@mui/icons-material/PersonAddAlt1';
@@ -8,19 +8,16 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import AddPhotoIcon from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
-import EmojiIcon from '@mui/icons-material/SentimentSatisfiedAlt';
-import ShareIcon from '@mui/icons-material/Share';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useForm } from "react-hook-form";
-import { korisnik, reakcijanaporuku } from '@prisma/client';
+import { korisnik } from '@prisma/client';
 import { mutate } from 'swr';
 
 import { ControlledOutlineTextfield } from "../../components/Controlled/ControlledTextfield";
 import LoadingButton from "../../components/LoadingButton";
 import AvatarImage from '../../components/AvatarImage';
 import socket from '../../lib/SocketIOClient';
-import useColorTheme from '../../hooks/useColorTheme';
 import FriendListItem from '../FriendListItem';
 import { Deleter, Fetcher, Poster } from '../../lib/Fetcher';
 import useErrorAlert from '../../hooks/useErrorAlert';
@@ -28,79 +25,10 @@ import DialogCustomForm from '../../components/Dialogs/CustomForm';
 import { ChooseGroupFriends, GroupChatFormData } from '../ChatList';
 import useDesktop from '../../hooks/useDesktop';
 import { S3Upload } from '../../lib/S3Bucket';
+import Message from '../Message';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage, IReaction } from '../../types';
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-interface MessageReactionsProps {
-    reactions: reakcijanaporuku[],
-}
-
-const MessageReactions: React.FC<MessageReactionsProps> = ({ reactions }) => {
-    const reactionsMap = new Map<string, number>();
-    for (const reaction of reactions) {
-        if (reactionsMap.has(reaction.emoticon))
-            reactionsMap.set(reaction.emoticon, reactionsMap.get(reaction.emoticon)! + 1);
-        else reactionsMap.set(reaction.emoticon, 1);
-    }
-    return (
-        <Paper elevation={5} sx={{ position: 'absolute', display: 'flex', bottom: '-1.25rem', right: 0 }}>
-            {Array.from(reactionsMap.keys()).map((key, i) => (
-                <Stack direction='row' key={i}>
-                    <Typography>{key}</Typography>
-                    <Typography>{reactionsMap.get(key)}</Typography>
-                </Stack>
-            ))}
-        </Paper>
-    );
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-interface MessageActionsProps {
-    idPoruka: number,
-    idChat: number,
-}
-
-const emojis = ["😀", "😂", "🙃", "😢", "😫"];
-
-const MessageActions: React.FC<MessageActionsProps> = ({ idPoruka, idChat }) => {
-
-    const showError = useErrorAlert();
-
-    const [openEmojiList, setOpenEmojiList] = React.useState(false);
-    const handleEmojiSelect = async (emoji: string) => {
-        setOpenEmojiList(false);
-        try {
-            const reaction = await Poster('/api/reactions', { arg: { emoji: emoji, idPoruka: idPoruka } });
-            // Notify other users about the reaction
-            socket.emit('reaction', { idChat: idChat, ...reaction });
-        } catch (err) {
-            showError('Could not add reaction!');
-        }
-    };
-
-    return (
-        <Box>
-            {openEmojiList ?
-                <Box sx={{ backgroundColor: 'white', borderRadius: '1rem' }}>
-                    {emojis.map((e, i) => (
-                        <IconButton key={i} onClick={() => handleEmojiSelect(e)}>{e}</IconButton>
-                    ))}
-                </Box>
-                : null
-            }
-            <IconButton onClick={() => setOpenEmojiList(!openEmojiList)}>
-                <EmojiIcon />
-            </IconButton>
-            <IconButton>
-                <ShareIcon />
-            </IconButton>
-        </Box>
-    );
-};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -327,6 +255,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                     tekst: msg.tekst,
                     timestamp: new Date(msg.timestamp as unknown as string).toLocaleString(),
                     reactions: msg.reakcijanaporuku,
+                    attachments: msg.multimedijalnizapis.map(attachment => attachment.url),
                 } as IMessage));
                 setMessages([...formatedMessages]);
             } catch (err) {
@@ -396,10 +325,23 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
 
     // On message send
     const { control, handleSubmit, reset } = useForm<AddChatFormData>();
-    const onSubmit = (data: AddChatFormData) => {
+    const onSubmit = async (data: AddChatFormData) => {
         reset();
 
         // Upload attachments TODO, stavi na S3, mozda hash po imenu + salt, na socketServeru stavi u bazu
+        const attachmenturls = [];
+        if (uploadFiles.length > 0) {
+            try {
+                for (const file of uploadFiles) {
+                    const filename = `attachment_${file.name}`;
+                    await S3Upload(filename, file);
+                    attachmenturls.push(`${process.env.NEXT_PUBLIC_S3_BUCKET_URL}/${filename}`);
+                }
+                setUploadFiles([]);
+            } catch(err) {
+                console.error(err);
+            }
+        }
 
         socket.emit('message', {
             idChat: selectedChat.idrazgovor,
@@ -408,7 +350,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             posiljatelj: user,
             timestamp: new Date().toLocaleString(),
             reactions: [], // inicijalno nema reakcija, i to se koristi samo dok se dohvate poruke iz db orginalno
-            attachments: [],
+            attachments: attachmenturls,
         } as IMessage);
     };
 
@@ -434,9 +376,6 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         }
         console.log(files);
         setUploadFiles(oldFiles => [...oldFiles, ...files]);
-
-        // Upload file TODO
-        
     };
 
     const handleOnFileDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
@@ -453,7 +392,6 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    const theme = useColorTheme().getTheme();
     return (
         <Stack direction='column' height='100%' maxHeight='100vh' position='relative' onDrop={handleFileDrop} onDragOver={handleOnFileDragOver} onDragLeave={handleOnFileDragLeave}>
             <div ref={fileDropAreaRef} id='fileDropArea' style={{ display: 'none', position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 999 }}>
@@ -465,36 +403,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             <Box flex='1' sx={{ padding: '2rem', overflowY: 'auto' }}>
                 {messages.map((msg, i) => (
                     <React.Fragment key={i}>
-                        <Stack direction='row' spacing='0.5rem' alignItems='center'>
-                            <Paper sx={{
-                                padding: '1rem', width: 'fit-content', borderRadius: '1rem', position: 'relative', // relative radi reactions
-                                backgroundColor: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? theme.palette.primary.main : undefined, // boja korisnikovih poruka je prema themu
-                                ml: (msg.posiljatelj.idkorisnik === user.idkorisnik) ? 'auto' : 0 // poruke trenutnog usera su na desnoj strani, ostali na ljevoj
-                            }}
-                            >
-                                <Stack direction='row' spacing='1rem'>
-                                    <AvatarImage url={msg.posiljatelj.avatarurl} width='64px' height='64px' />
-                                    <Stack direction='column' sx={{ maxWidth: 'calc(100vw / 3)' }}>
-                                        <Typography variant='caption'>
-                                            {msg.timestamp}
-                                        </Typography>
-                                        <Typography variant='body1' fontWeight='bold' style={{ wordWrap: 'break-word' }}>
-                                            {msg.posiljatelj.korisnickoime}
-                                        </Typography>
-                                        <Stack direction='column' justifyContent='center' flex='1'>
-                                            <Typography variant='body2' style={{ wordWrap: 'break-word' }}>
-                                                {msg.tekst}
-                                            </Typography>
-                                        </Stack>
-                                    </Stack>
-                                </Stack>
-                                <MessageReactions reactions={msg.reactions} />
-                            </Paper>
-                            {msg.posiljatelj.idkorisnik !== user.idkorisnik ?
-                                <MessageActions idPoruka={msg.idMsg} idChat={selectedChat.idrazgovor} />
-                                : null
-                            }
-                        </Stack>
+                        <Message msg={msg} user={user} idChat={selectedChat.idrazgovor} />
                         <br />
                     </React.Fragment>
                 ))}

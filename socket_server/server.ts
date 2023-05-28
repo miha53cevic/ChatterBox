@@ -20,7 +20,7 @@ export interface IMessage {
     posiljatelj: korisnik,
     timestamp: string,
     reactions: reakcijanaporuku[],
-    attachments: multimedijalnizapis[],
+    attachments: string[],
 };
 
 export interface INotification {
@@ -194,9 +194,20 @@ io.on('connection', async (socket) => {
                 },
             });
             console.log("DB_LOG: Saving new message to db: ", newMsg);
-            msg.idMsg = newMsg.idporuka;
+            msg.idMsg = newMsg.idporuka; // Stavi idMsg od baze
         } catch (err) {
             console.error(err);
+        }
+        // Save attachment to db
+        try {
+            const data = msg.attachments.map(url => ({ idporuka: msg.idMsg, url: url }));
+            const attachments = prisma.multimedijalnizapis.createMany({
+                data: data,
+            });
+
+            console.log("DB_LOG: Saving attachments to db: ", (await attachments).count);
+        } catch(err) {
+            console.error();
         }
 
         io.in(`chat${msg.idChat}`).emit('message', msg);
