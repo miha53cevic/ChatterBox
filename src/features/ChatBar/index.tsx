@@ -315,6 +315,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     React.useEffect(() => {
         // Reset saved messages from previously open chat
         setMessages([]);
+        setUploadFiles([]); // Reset file upload
 
         (async () => {
             try {
@@ -397,6 +398,9 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     const { control, handleSubmit, reset } = useForm<AddChatFormData>();
     const onSubmit = (data: AddChatFormData) => {
         reset();
+
+        // Upload attachments TODO, stavi na S3, mozda hash po imenu + salt, na socketServeru stavi u bazu
+
         socket.emit('message', {
             idChat: selectedChat.idrazgovor,
             idMsg: -1, // later set to real id in socketServer
@@ -404,12 +408,18 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             posiljatelj: user,
             timestamp: new Date().toLocaleString(),
             reactions: [], // inicijalno nema reakcija, i to se koristi samo dok se dohvate poruke iz db orginalno
+            attachments: [],
         } as IMessage);
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
     const fileDropAreaRef = React.useRef<HTMLDivElement>(null);
+    const [uploadFiles, setUploadFiles] = React.useState<File[]>([]);
+
+    const removeUploadFile = (index: number) => {
+        setUploadFiles(old => [...old.filter((f, i) => i !== index)]);
+    };
 
     const handleFileDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
         e.preventDefault();
@@ -418,11 +428,15 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         fileDropAreaRef.current.style.display = 'none';
 
         const fileList = e.dataTransfer.files;
+        const files: File[] = [];
         for (let i = 0; i < fileList.length; i++) {
-            console.log(fileList.item(i));
+            files.push(fileList.item(i)!);
         }
+        console.log(files);
+        setUploadFiles(oldFiles => [...oldFiles, ...files]);
 
         // Upload file TODO
+        
     };
 
     const handleOnFileDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
@@ -487,12 +501,22 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                 <div id='messagesEnd' ref={messagesEndRef}></div>
             </Box>
             <Paper sx={{ padding: '2rem', overflowY: 'auto' }}>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <Stack direction='row'>
-                        <ControlledOutlineTextfield control={control} name="message" variant="outlined" label='Message' multiline fullWidth required />
-                        <LoadingButton variant="contained" loading={false} type="submit"><ChatBubbleIcon /></LoadingButton>
-                    </Stack>
-                </form>
+                <Stack direction='column' spacing='1rem'>
+                    {uploadFiles.map((file, i) => (
+                        <Stack direction='row' alignItems='center' spacing='0.5rem' key={i}>
+                            <Typography>{file.name}</Typography>
+                            <IconButton onClick={() => removeUploadFile(i)}>
+                                <CloseIcon />
+                            </IconButton>
+                        </Stack>
+                    ))}
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <Stack direction='row'>
+                            <ControlledOutlineTextfield control={control} name="message" variant="outlined" label='Message' multiline fullWidth required />
+                            <LoadingButton variant="contained" loading={false} type="submit"><ChatBubbleIcon /></LoadingButton>
+                        </Stack>
+                    </form>
+                </Stack>
             </Paper>
         </Stack>
     );
