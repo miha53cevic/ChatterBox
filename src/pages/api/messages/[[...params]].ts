@@ -1,4 +1,4 @@
-import { createHandler, Get, UnauthorizedException, Req, Param, Post } from 'next-api-decorators';
+import { createHandler, Get, UnauthorizedException, Req, Param } from 'next-api-decorators';
 import type { NextApiRequest } from "next";
 import { prisma } from '../../../server/db';
 
@@ -23,6 +23,7 @@ class MessagesController {
             include: {
                 korisnik: true,
                 reakcijanaporuku: true,
+                multimedijalnizapis: true,
             }
         });
 

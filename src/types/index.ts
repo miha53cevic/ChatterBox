@@ -1,4 +1,4 @@
-import { korisnik, reakcijanaporuku } from "@prisma/client";
+import { korisnik, multimedijalnizapis, reakcijanaporuku } from "@prisma/client";
 
 export interface IMessage {
     idChat: number,
@@ -7,6 +7,7 @@ export interface IMessage {
     posiljatelj: korisnik,
     timestamp: string,
     reactions: reakcijanaporuku[],
+    attachments: string[], // string url-ova
 };
 
 export type IUserStatus = 'online' | 'away' | 'offline';
