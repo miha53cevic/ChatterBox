@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, IconButton, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, IconButton, Menu, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import AddPersonIcon from '@mui/icons-material/PersonAddAlt1';
@@ -10,6 +10,7 @@ import AddPhotoIcon from '@mui/icons-material/AddPhotoAlternate';
 import CancelIcon from '@mui/icons-material/Cancel';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useForm } from "react-hook-form";
 import { korisnik } from '@prisma/client';
 import { mutate } from 'swr';
@@ -390,6 +391,17 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
         fileDropAreaRef.current.style.display = 'none';
     };
 
+    const handleFilePicker: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+        const fileList = e.target.files;
+        if (!fileList) return;
+        const files: File[] = [];
+        for (let i = 0; i < fileList.length; i++) {
+            files.push(fileList.item(i)!);
+        }
+        console.log(files);
+        setUploadFiles(oldFiles => [...oldFiles, ...files]);
+    };
+
     ////////////////////////////////////////////////////////////////////////////////////////
 
     return (
@@ -403,7 +415,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             <Box flex='1' sx={{ padding: '2rem', overflowY: 'auto' }}>
                 {messages.map((msg, i) => (
                     <React.Fragment key={i}>
-                        <Message msg={msg} user={user} idChat={selectedChat.idrazgovor} />
+                        <Message msg={msg} user={user} />
                         <br />
                     </React.Fragment>
                 ))}
@@ -421,6 +433,15 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                     ))}
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <Stack direction='row'>
+                            <Button variant='contained' component='label' sx={{ mr: '0.5rem' }}>
+                                <UploadFileIcon />
+                                <input
+                                    type='file'
+                                    accept="*"
+                                    onChange={handleFilePicker}
+                                    hidden
+                                />
+                            </Button>
                             <ControlledOutlineTextfield control={control} name="message" variant="outlined" label='Message' multiline fullWidth required />
                             <LoadingButton variant="contained" loading={false} type="submit"><ChatBubbleIcon /></LoadingButton>
                         </Stack>
