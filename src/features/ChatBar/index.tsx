@@ -12,7 +12,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useForm } from "react-hook-form";
-import { korisnik } from '@prisma/client';
+import { korisnik, multimedijalnizapis, poruka } from '@prisma/client';
 import { mutate } from 'swr';
 
 import { ControlledOutlineTextfield } from "../../components/Controlled/ControlledTextfield";
@@ -329,7 +329,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     const onSubmit = async (data: AddChatFormData) => {
         reset();
 
-        // Upload attachments TODO, stavi na S3, mozda hash po imenu + salt, na socketServeru stavi u bazu
+        // Spremi attachments na S3
         const attachmenturls = [];
         if (uploadFiles.length > 0) {
             try {
@@ -344,10 +344,18 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
             }
         }
 
+        // Spremi message
+        const newMsg = await Poster<{ messageText: string }, poruka>(`/api/messages/${selectedChat.idrazgovor}`, { arg: { messageText: data.message } });
+
+        // Spremi attachments objects u bazu
+        for (const attachmentUrl of attachmenturls) {
+            const newAttachment = await Poster<{ idMsg: number, url: string }, multimedijalnizapis>('/api/attachments', { arg: { idMsg: newMsg.idporuka, url: attachmentUrl } });
+        }
+
         socket.emit('message', {
             idChat: selectedChat.idrazgovor,
-            idMsg: -1, // later set to real id in socketServer
-            tekst: data.message,
+            idMsg: newMsg.idporuka,
+            tekst: newMsg.tekst,
             posiljatelj: user,
             timestamp: new Date().toLocaleString(),
             reactions: [], // inicijalno nema reakcija, i to se koristi samo dok se dohvate poruke iz db orginalno

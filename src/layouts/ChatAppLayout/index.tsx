@@ -9,6 +9,8 @@ import BottomAppBar from "../BottomAppBar";
 import useDesktop from "../../hooks/useDesktop";
 import useColorTheme from "../../hooks/useColorTheme";
 import socket from "../../lib/SocketIOClient";
+import { Fetcher } from "../../lib/Fetcher";
+import { ApiChats } from "../../types/apiTypes";
 
 export interface Props {
     children: React.ReactNode,
@@ -23,16 +25,27 @@ const ChatAppLayout: React.FC<Props> = ({ children, user, fullscreen }) => {
     React.useEffect(() => {
         if (!user) throw new Error("ChatPage: user not defined!");
 
-        socket.on('connect', () => {
-            console.log("SocketIO: Connected!");
-        });
-        socket.on('disconnect', () => {
-            console.log("SocketIO: Disconnected!");
-        });
-        socket.on("connect_error", (err) => console.error(err.message));
+        const socketRegister = async () => {
+            socket.on('connect', () => {
+                console.log("SocketIO: Connected!");
+            });
+            socket.on('disconnect', () => {
+                console.log("SocketIO: Disconnected!");
+            });
+            socket.on("connect_error", (err) => console.error(err.message));
 
-        socket.auth = user;
-        socket.connect();
+            try {
+                const data = await Fetcher<ApiChats>('/api/chats');
+                socket.auth = {
+                    user: user,
+                    userChats: data,
+                };
+                socket.connect();
+            } catch (err) {
+                throw new Error("Could not fetch user chats!");
+            }
+        };
+        socketRegister();
 
         return () => {
             socket.off('connect');

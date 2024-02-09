@@ -12,7 +12,8 @@
     "prisma-migration-dev": "dotenv -e .env.development -- prisma migrate dev",
     "prisma-generate": "prisma generate",
     "prisma-migration-deploy": "prisma migrate deploy",
-    "prisma-db-pull": "dotenv -e .env.development -- prisma db pull"
+    "prisma-db-pull": "dotenv -e .env.development -- prisma db pull",
+    "buildprod": "npm run prisma-prototype-prod-push && npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.325.0",

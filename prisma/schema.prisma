@@ -3,17 +3,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model korisnik {
   idkorisnik                                                            Int                      @id @default(autoincrement())
-  korisnickoime                                                         String                   @db.VarChar(20)
-  email                                                                 String                   @db.VarChar(50)
+  korisnickoime                                                         String                   
+  email                                                                 String                   
   lozinka                                                               String                   
   verificiran_email                                                     Boolean                  @default(false)
-  avatarurl                                                             String?                  @db.VarChar(300)
+  avatarurl                                                             String?                  
   izgledapp                                                             Int                      @default(0)
   poruka                                                                poruka[]
   prijatelji_prijatelji_idkorisnik1Tokorisnik                           prijatelji[]             @relation("prijatelji_idkorisnik1Tokorisnik")
@@ -27,9 +27,9 @@ model korisnik {
 
 model multimedijalnizapis {
   idzapis   Int       @id @default(autoincrement())
-  url       String    @db.VarChar(500)
+  url       String    
   idporuka  Int
-  timestamp DateTime  @db.Timestamp(6) @default(now())
+  timestamp DateTime  @default(now())
   poruka    poruka    @relation(fields: [idporuka], references: [idporuka], onDelete: Cascade, onUpdate: NoAction)
 }
 
@@ -37,8 +37,8 @@ model poruka {
   idporuka            Int                   @id @default(autoincrement())
   idposiljatelj       Int
   idrazgovor          Int
-  tekst               String                @db.VarChar(500)
-  timestamp           DateTime              @db.Timestamp(6) @default(now())
+  tekst               String                
+  timestamp           DateTime              @default(now())
   multimedijalnizapis multimedijalnizapis[]
   korisnik            korisnik              @relation(fields: [idposiljatelj], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
   razgovor            razgovor              @relation(fields: [idrazgovor], references: [idrazgovor], onDelete: Cascade, onUpdate: NoAction)
@@ -68,9 +68,9 @@ model pripadarazgovoru {
 
 model razgovor {
   idrazgovor       Int                @id @default(autoincrement())
-  avatarurl        String?            @db.VarChar(300)
+  avatarurl        String?            
   grupa            Boolean
-  nazivGrupe       String?             @db.VarChar(100)
+  nazivGrupe       String?            
   poruka           poruka[]
   pripadarazgovoru pripadarazgovoru[]
 }
@@ -83,18 +83,18 @@ model reakcijanaporuku {
 }
 
 model status {
-  nazivstatus            String                   @id @db.VarChar(50)
+  nazivstatus            String                   @id
   zahtjevzaprijateljstvo zahtjevzaprijateljstvo[]
 }
 
 model zahtjevzaprijateljstvo {
   idposiljatelj                                           Int
   idprimatelj                                             Int
-  poruka                                                  String?   @db.VarChar(500)
-  nazivstatus                                             String    @db.VarChar(50)
-  poslantimestamp                                         DateTime  @db.Timestamp(6)    @default(now())
-  prihvacentimestamp                                      DateTime? @db.Timestamp(6)
-  odbijentimestamp                                        DateTime? @db.Timestamp(6)
+  poruka                                                  String?   
+  nazivstatus                                             String    
+  poslantimestamp                                         DateTime  @default(now())
+  prihvacentimestamp                                      DateTime? 
+  odbijentimestamp                                        DateTime? 
   korisnik_zahtjevzaprijateljstvo_idposiljateljTokorisnik korisnik  @relation("zahtjevzaprijateljstvo_idposiljateljTokorisnik", fields: [idposiljatelj], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
   korisnik_zahtjevzaprijateljstvo_idprimateljTokorisnik   korisnik  @relation("zahtjevzaprijateljstvo_idprimateljTokorisnik", fields: [idprimatelj], references: [idkorisnik], onDelete: Cascade, onUpdate: NoAction)
   status                                                  status    @relation(fields: [nazivstatus], references: [nazivstatus], onDelete: Cascade, onUpdate: NoAction)

@@ -10,7 +10,7 @@
         "nodemon": "nodemon .",
         "build": "tsc && npm run copyEnv",
         "prisma-generate": "prisma generate",
-        "copyEnv": "cp .env ./dist/.env && cp .env.development ./dist/.env.development"
+        "copyEnv": "cp .env ./dist/.env"
     },
     "dependencies": {
         "@prisma/client": "^4.14.1",
@@ -21,11 +21,11 @@
     },
     "author": "miha53cevic",
     "devDependencies": {
-        "dotenv-cli": "^7.2.1",
-        "typescript": "^5.0.4",
         "@types/express": "^4.17.17",
         "@types/node": "^20.2.1",
-        "nodemon": "^2.0.22",
-        "prisma": "^4.14.1"
+        "dotenv-cli": "^7.2.1",
+        "nodemon": "^3.0.3",
+        "prisma": "^4.14.1",
+        "typescript": "^5.0.4"
     }
 }

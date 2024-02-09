@@ -66,19 +66,19 @@ class ChatsController {
         const newSingleChat = await prisma.razgovor.create({
             data: {
                 grupa: false,
-                pripadarazgovoru: {
-                    createMany: {
-                        data: [
-                            {
-                                idkorisnik: req.session.korisnik.idkorisnik, // dodaj sebe u grupu
-                            },
-                            {
-                                idkorisnik: dto.idSudionik,
-                            }
-                        ]
-                    }
-                }
             },
+        });
+        const userPripadaRazgovoruChata = await prisma.pripadarazgovoru.create({
+            data: {
+                idrazgovor: newSingleChat.idrazgovor,
+                idkorisnik: req.session.korisnik.idkorisnik, // dodaj sebe u grupu
+            }
+        });
+        const sudionikPripadaRazgovoruChata = await prisma.pripadarazgovoru.create({
+            data: {
+                idrazgovor: newSingleChat.idrazgovor,
+                idkorisnik: dto.idSudionik,
+            }
         });
 
         return newSingleChat;
@@ -98,13 +98,17 @@ class ChatsController {
             data: {
                 grupa: true,
                 nazivGrupe: dto.nazivGrupe,
-                pripadarazgovoru: {
-                    createMany: {
-                        data: usersInGroup,
-                    }
-                }
             },
         });
+
+        for (const user of usersInGroup) {
+            const usersInPripadaRazgovoruGroupe = await prisma.pripadarazgovoru.create({
+                data: {
+                    idrazgovor: newGroupChat.idrazgovor,
+                    idkorisnik: user.idkorisnik,
+                }
+            });
+        }
 
         return newGroupChat;
     }

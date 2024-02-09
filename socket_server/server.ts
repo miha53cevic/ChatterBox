@@ -1,8 +1,8 @@
 import express from 'express';
 import http from 'http';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import cors from 'cors';
-import { PrismaClient, korisnik, multimedijalnizapis, reakcijanaporuku } from '@prisma/client';
+import { korisnik, pripadarazgovoru, razgovor, reakcijanaporuku } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({
@@ -34,6 +34,12 @@ export interface IReaction extends reakcijanaporuku {
 
 export type IUserStatus = 'online' | 'away' | 'offline';
 
+export type Chat = (razgovor & {
+    pripadarazgovoru: (pripadarazgovoru & {
+        korisnik: korisnik;
+    })[];
+});
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 interface ClientToServerEvents {
@@ -57,9 +63,9 @@ interface InterServerEvents {
 interface SocketData {
     user: korisnik,
     status: IUserStatus,
+    userChats: Chat[],
 };
 
-const prisma = new PrismaClient();
 const app = express();
 const server = http.createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(server, {
@@ -78,28 +84,17 @@ app.get('/', (req, res) => {
 
 // Middleware for when connecting
 io.use(async (socket, next) => {
-    const user = socket.handshake.auth;
+    const { user, userChats } = socket.handshake.auth;
     if (!user) {
         return next(new Error("no user data set!"));
     }
     // Save user info to socket
     socket.data.user = user as korisnik;
     socket.data.status = 'online';
+    socket.data.userChats = userChats as Chat[];
 
     // Join socket to all it's Chats it belongs to
-    const chats = await prisma.razgovor.findMany({
-        where: {
-            pripadarazgovoru: {
-                some: {
-                    idkorisnik: socket.data.user.idkorisnik,
-                }
-            }
-        },
-        select: {
-            idrazgovor: true,
-        }
-    });
-    for (const { idrazgovor } of chats) {
+    for (const { idrazgovor } of socket.data.userChats) {
         socket.join(`chat${idrazgovor}`);
     }
 
@@ -108,70 +103,14 @@ io.use(async (socket, next) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const getUnreadNotifications = async (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
-    const notifications: INotification[] = [];
-    try {
-        const chats = await prisma.razgovor.findMany({
-            where: {
-                pripadarazgovoru: {
-                    some: {
-                        idkorisnik: socket.data.user!.idkorisnik,
-                    }
-                }
-            },
-            select: {
-                idrazgovor: true,
-                pripadarazgovoru: {
-                    where: {
-                        idkorisnik: socket.data.user!.idkorisnik,
-                    },
-                    select: {
-                        poruka: {
-                            select: {
-                                idporuka: true,
-                            }
-                        },
-                    }
-                }
-            }
-        });
-        for (const { idrazgovor, pripadarazgovoru } of chats) {
-            const idLastMessage = pripadarazgovoru[0].poruka?.idporuka;
-            const unreadCount = await prisma.poruka.count({
-                where: {
-                    idrazgovor: idrazgovor,
-                    idporuka: {
-                        gt: idLastMessage, // Sve poruke nakon zadnje sigurno imaju veci id
-                    }
-                },
-            });
-            if (unreadCount > 0) {
-                notifications.push({
-                    idChat: idrazgovor,
-                    unreadCount: unreadCount,
-                });
-            }
-        }
-    } catch(err) {
-        console.error(err);
-    }
-
-    return notifications;
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
 io.on('connection', async (socket) => {
     console.log(`Connected: ${socket.id}`);
+    console.log(`Chat Count: ${socket.data.userChats?.length}`);
     //(await io.fetchSockets()).map(i => i.id);
 
     // Emit connected sockets for status
     const connectedUsers = Array.from(io.of('/').sockets.values()).map(sock => sock.data);
     io.emit("connectedUsers", connectedUsers); // send to everyone
-
-    // Send initial notifications from db, user keeps track afterwards
-    const notifications = await getUnreadNotifications(socket);
-    socket.emit('notifications', notifications);
 
     socket.on('disconnect', (reason) => {
         console.log(`User id: ${socket.id} disconnected with reason: ${reason}`);
@@ -184,32 +123,6 @@ io.on('connection', async (socket) => {
     });
 
     socket.on('message', async (msg) => {
-        // Save chat message to db
-        try {
-            const newMsg = await prisma.poruka.create({
-                data: {
-                    idrazgovor: msg.idChat,
-                    idposiljatelj: msg.posiljatelj.idkorisnik,
-                    tekst: msg.tekst,
-                },
-            });
-            console.log("DB_LOG: Saving new message to db: ", newMsg);
-            msg.idMsg = newMsg.idporuka; // Stavi idMsg od baze
-        } catch (err) {
-            console.error(err);
-        }
-        // Save attachment to db
-        try {
-            const data = msg.attachments.map(url => ({ idporuka: msg.idMsg, url: url }));
-            const attachments = prisma.multimedijalnizapis.createMany({
-                data: data,
-            });
-
-            console.log("DB_LOG: Saving attachments to db: ", (await attachments).count);
-        } catch(err) {
-            console.error();
-        }
-
         io.in(`chat${msg.idChat}`).emit('message', msg);
     });
 

@@ -25,7 +25,7 @@ const Index = () => {
                             </Button>
                             <Button variant='outlined'>
                                 <UnstyledNextLink href='/login'>
-                                    Already haven an account?
+                                    Already have an account?
                                 </UnstyledNextLink>
                             </Button>
                         </Stack>

@@ -12,6 +12,7 @@ import useDesktop from '../../hooks/useDesktop';
 
 import { Chat } from '../../types/apiTypes';
 import { IConnectedUser, IMessage, INotification } from '../../types';
+import { Fetcher } from '../../lib/Fetcher';
 
 export const getServerSideProps = withSession(async ({ req }) => {
     const user = req.session.korisnik;
@@ -36,10 +37,19 @@ const Chat: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         socket.on('connectedUsers', (connectedUsers: IConnectedUser[]) => {
             setConnectedUsers([...connectedUsers]);
         });
+    
         // Initial notifications from db on first connect then client takes over counting
-        socket.on('notifications', (notifications: INotification[]) => {
-            setNotifications(notifications);
-        });
+        const getInitialNotifications = async () => {
+            try {
+                const data = await Fetcher<INotification[]>('/api/notifications');
+                if (notifications.length === data.length) return;
+                setNotifications(data);
+                console.log("[chat]: Got notifications " + data.length);
+            } catch(err) {
+                console.error("[chat]: Could not load inital notifications");
+            }
+        };
+        getInitialNotifications();
 
         const notificationOnMessage = (msg: IMessage) => {
             if (!audio) return;

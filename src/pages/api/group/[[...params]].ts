@@ -68,11 +68,13 @@ class GroupController {
             idrazgovor: dto.idGroup,
         }));
 
-        const res = await prisma.pripadarazgovoru.createMany({
-            data: data,
-        });
+        for (const d of data) {
+            await prisma.pripadarazgovoru.create({
+                data: d,
+            });
+        }
 
-        return res;
+        return data.length;
     }
 
     @Delete('/leaveGroup/:idGroup')
