@@ -70,7 +70,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(server, {
     cors: {
-        origin: ['https://chatterbox-zavrad.herokuapp.com', 'http://localhost:3000', 'http://127.0.0.1:3000'],
+        origin: ['https://chatterbox-miha53cevic.koyeb.app', 'http://localhost:3000', 'http://127.0.0.1:3000'],
         credentials: true,
         preflightContinue: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
