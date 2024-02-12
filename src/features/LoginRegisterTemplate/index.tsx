@@ -45,15 +45,15 @@ const LoginRegisterTemplate: React.FC<Props> = ({ children, type }) => {
                                         "Already have an account?"
                                     }
                                 </Typography>
-                                <Button variant='contained' size="large" color='secondary'>
-                                    <UnstyledNextLink href={type == 'login' ? '/register' : '/login'}>
+                                <UnstyledNextLink href={type == 'login' ? '/register' : '/login'}>
+                                    <Button variant='contained' size="large" color='secondary'>
                                         {type == 'login' ?
                                             "Create an account"
                                             :
                                             "Take me to login"
                                         }
-                                    </UnstyledNextLink>
-                                </Button>
+                                    </Button>
+                                </UnstyledNextLink>
                             </Stack>
                         </Stack>
                     </Grid>

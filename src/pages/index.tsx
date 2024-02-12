@@ -8,7 +8,7 @@ import useDesktop from '../hooks/useDesktop';
 const Index = () => {
 
     const desktop = useDesktop();
-    
+
     return (
         <main>
             <TopAppBar />
@@ -16,26 +16,26 @@ const Index = () => {
                 <Grid container spacing='1rem'>
                     <Grid item xs={12} md={6} sx={{ textAlign: desktop ? undefined : 'center' }}>
                         <Typography variant='h1'>Chat from anywhere</Typography>
-                        <br/>
+                        <br />
                         <Stack direction='row' spacing='1rem'>
-                            <Button variant='contained'>
-                                <UnstyledNextLink href='/register'>
+                            <UnstyledNextLink href='/register'>
+                                <Button variant='contained'>
                                     Start messaging!
-                                </UnstyledNextLink>
-                            </Button>
-                            <Button variant='outlined'>
-                                <UnstyledNextLink href='/login'>
+                                </Button>
+                            </UnstyledNextLink>
+                            <UnstyledNextLink href='/login'>
+                                <Button variant='outlined'>
                                     Already have an account?
-                                </UnstyledNextLink>
-                            </Button>
+                                </Button>
+                            </UnstyledNextLink>
                         </Stack>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                        <img src='/frontpage_screenshot.png' 
+                        <img src='/frontpage_screenshot.png'
                             loading='lazy'
-                            width='100%' 
-                            height='100%' 
-                            style={{ objectFit: 'contain' }} 
+                            width='100%'
+                            height='100%'
+                            style={{ objectFit: 'contain' }}
                         />
                     </Grid>
                 </Grid>
