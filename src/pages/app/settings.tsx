@@ -80,7 +80,7 @@ const Settings: React.FC<InferGetServerSidePropsType<typeof getServerSideProps>>
                             <Grid item xs={12} md={6}>
                                 <Stack direction='column' alignItems='center' spacing='1rem'>
                                     <Avatar sx={{ width: '96px', height: '96px' }} src={user.avatarurl} />
-                                    <Button variant='contained' component='label'>
+                                    <Button variant='contained' component='label' disabled>
                                         Change avatar
                                         <input
                                             type='file'
