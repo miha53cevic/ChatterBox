@@ -27,7 +27,7 @@ model korisnik {
 
 model multimedijalnizapis {
   idzapis   Int       @id @default(autoincrement())
-  url       String    
+  blob      Bytes
   idporuka  Int
   timestamp DateTime  @default(now())
   poruka    poruka    @relation(fields: [idporuka], references: [idporuka], onDelete: Cascade, onUpdate: NoAction)

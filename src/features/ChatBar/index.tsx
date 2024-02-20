@@ -30,6 +30,7 @@ import Message from '../Message';
 
 import { ApiGetForChatMessages, Chat } from "../../types/apiTypes";
 import { IConnectedUser, IMessage, IReaction } from '../../types';
+import axios from 'axios';
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -256,7 +257,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                     tekst: msg.tekst,
                     timestamp: new Date(msg.timestamp as unknown as string).toLocaleString(),
                     reactions: msg.reakcijanaporuku,
-                    attachments: msg.multimedijalnizapis.map(attachment => attachment.url),
+                    attachments: msg.multimedijalnizapis.map(attachment => `/api/attachments/${attachment.idzapis}`),
                 } as IMessage));
                 setMessages([...formatedMessages]);
             } catch (err) {
@@ -329,27 +330,24 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
     const onSubmit = async (data: AddChatFormData) => {
         reset();
 
-        // Spremi attachments na S3
+        // Spremi message
+        const newMsg = await Poster<{ messageText: string }, poruka>(`/api/messages/${selectedChat.idrazgovor}`, { arg: { messageText: data.message } });
+
+        // Spremi attachments u bazu
         const attachmenturls = [];
         if (uploadFiles.length > 0) {
             try {
                 for (const file of uploadFiles) {
-                    const filename = `attachment_${file.name}`;
-                    await S3Upload(filename, file);
-                    attachmenturls.push(`${process.env.NEXT_PUBLIC_S3_BUCKET_URL}/${filename}`);
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    formData.append('idMsg', newMsg.idporuka.toString());
+                    const newAttachment = await axios.post('/api/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } }) as multimedijalnizapis;
+                    attachmenturls.push(`/api/attachments/${newAttachment.idzapis}`);
                 }
                 setUploadFiles([]);
             } catch(err) {
                 console.error(err);
             }
-        }
-
-        // Spremi message
-        const newMsg = await Poster<{ messageText: string }, poruka>(`/api/messages/${selectedChat.idrazgovor}`, { arg: { messageText: data.message } });
-
-        // Spremi attachments objects u bazu
-        for (const attachmentUrl of attachmenturls) {
-            const newAttachment = await Poster<{ idMsg: number, url: string }, multimedijalnizapis>('/api/attachments', { arg: { idMsg: newMsg.idporuka, url: attachmentUrl } });
         }
 
         socket.emit('message', {
@@ -445,7 +443,7 @@ const ChatBar: React.FC<Props> = ({ user, selectedChat, closeChat, connectedUser
                                 <UploadFileIcon />
                                 <input
                                     type='file'
-                                    accept="*"
+                                    accept="image/*"
                                     onChange={handleFilePicker}
                                     hidden
                                 />

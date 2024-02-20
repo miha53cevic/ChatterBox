@@ -32,8 +32,7 @@ const Attachments: React.FC<AttachmentsProps> = ({ attachmenturls, myAttachments
     return (
         <React.Fragment>
             {attachmenturls.map((url, i) => {
-                const fileName = url.split(`${process.env.NEXT_PUBLIC_S3_BUCKET_URL}`)[1];
-                const isImage = imageExt.includes(fileName.split('.')[1]);
+                const isImage = true;
                 return (
                     <Paper key={i} sx={{ width: 'fit-content', ml: myAttachments ? 'auto' : 0 }}>
                         {isImage ?
@@ -41,7 +40,7 @@ const Attachments: React.FC<AttachmentsProps> = ({ attachmenturls, myAttachments
                             :
                             <a href={url}>
                                 <Stack direction='column' alignItems='center' sx={{ p: '4rem' }}>
-                                    <Typography>{fileName.split('/attachment_')[1]}</Typography>
+                                    <Typography>Attachment</Typography>
                                     <DownloadIcon />
                                 </Stack>
                             </a>
